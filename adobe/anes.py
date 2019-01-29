@@ -3,7 +3,7 @@ from utils import *
 # Build Adobe AIR SDK ANE.
 def build_ane_sdk():
     dir_scripts     = os.path.dirname(os.path.realpath(__file__))
-    dir_root        = os.path.dirname(os.path.normpath(dir_scripts))
+    dir_root        = os.path.dirname(os.path.dirname(os.path.dirname(os.path.normpath(dir_scripts))))
     dir_build       = '{0}/build'.format(dir_root)
     dir_src         = '{0}/src'.format(dir_root)
     dir_ext_android = '{0}/ext/android'.format(dir_root)
@@ -66,7 +66,7 @@ def build_ane_sdk():
 # Build Adobe AIR SDK test library ANE.
 def build_ane_test():
     dir_scripts         = os.path.dirname(os.path.realpath(__file__))
-    dir_root            = os.path.dirname(os.path.normpath(dir_scripts))
+    dir_root            = os.path.dirname(os.path.dirname(os.path.dirname(os.path.normpath(dir_scripts))))
     dir_plugin          = '{0}/test/plugin'.format(dir_root)
     dir_plugin_android  = '{0}/android'.format(dir_plugin)
     dir_plugin_ios      = '{0}/ios'.format(dir_plugin)

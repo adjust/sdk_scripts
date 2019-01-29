@@ -96,8 +96,8 @@ def check_submodule_dir(platform, submodule_dir):
 
 # Change to directory.
 def change_dir(dir):
-    debug('Changing directory to {0} ...'.format(dir))
     os.chdir(dir)
+    debug('Changed directory to {0}.'.format(dir))
 
 # Create directory if it doesn't exist.
 def create_dir_if_not_present(dir):
@@ -108,54 +108,55 @@ def create_dir_if_not_present(dir):
 def remove_dir(dir):
     if os.path.exists(dir):
         shutil.rmtree(dir)
-        debug('Deleted {0}'.format(dir))
+        debug('Deleted directory {0}.'.format(dir))
     else:
-        debug('Can not delete {0}. Directory doesn\'t exist'.format(dir))
+        debug('Can not delete directory {0}. Directory doesn\'t exist.'.format(dir))
 
 # If given directory exists, remove it and create it again.
 def recreate_dir(dir):
     if os.path.exists(dir):
         shutil.rmtree(dir)
-        debug('Deleted {0}'.format(dir))
+        debug('Deleted directory {0}.'.format(dir))
     os.mkdir(dir)
-    debug('Created {0}'.format(dir))
+    debug('Created directory {0}.'.format(dir))
 
 # Remove given file if it exists.
 def remove_file_if_exists(path):
     if os.path.exists(path):
         os.remove(path)
-        debug('Deleted {0}'.format(path))
+        debug('Deleted file {0}.'.format(path))
     else:
-        error('Can not delete {0}. File does not exist.'.format(path))
+        error('Can not delete file {0}. File does not exist.'.format(path))
 
 # Remove files with certain pattern from given directory.
 def remove_files_with_pattern(pattern, directory, excluded_files=[]):
     for item in glob.glob(directory + '/' + pattern):
         if item in excluded_files:
-            debug('Skipping deletion of ' + item)
+            debug('Skipping deletion of {0}.'.format(item))
             continue
         if os.path.isfile(item):
             os.remove(item)
         else:
             shutil.rmtree(item)
-        debug('Deleted ' + item)
+        debug('Deleted {0}.'.format(item))
 
 # Remove all the contents of the given directory.
 def clean_dir(item_pattern, directory, excluded_files=[]):
     for item in glob.glob(directory + '/' + item_pattern):
         if item in excluded_files:
-            debug('Skipping deletion of ' + item)
+            debug('Skipping deletion of {0}.'.format(item))
             continue
         if os.path.isfile(item):
             os.remove(item)
         else:
             shutil.rmtree(item)
-        debug('Deleted ' + item)
+        debug('Deleted {0}.'.format(item))
 
-# Copy content of one directory to another
+# Copy content of one directory to another.
 def copy_dir_content(dir_source, dir_destination):
     copy_tree(dir_source, dir_destination)
 
+# Copy file from one place to another.
 def copy_file(file_source, file_destination):
     shutil.copyfile(file_source, file_destination)
 
@@ -288,9 +289,11 @@ def xcode_rebuild_custom_destination(target, configuration, destination):
 # ------------------------------------------------------------------
 # ADB commands.
 
+# Uninstall an app with given package ID.
 def adb_uninstall(package):
     execute_command(['adb', 'uninstall', package])
 
+# Install an app with give APK path.
 def adb_install_apk(path):
     execute_command(['adb', 'install', '-r', path])
 
