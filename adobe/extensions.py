@@ -1,5 +1,8 @@
 from utils import *
 
+# Get root dir of the repo.
+dir_root = get_root_dir()
+
 # Build Adobe AIR SDK Android extension JAR in debug mode.
 def build_extension_sdk_android_debug():
     build_extension_sdk_android('debug')
@@ -10,8 +13,6 @@ def build_extension_sdk_android_release():
 
 # Build Adobe AIR SDK Android extension JAR.
 def build_extension_sdk_android(build_mode='release'):
-    dir_scripts         = os.path.dirname(os.path.realpath(__file__))
-    dir_root            = os.path.dirname(os.path.normpath(dir_scripts))
     dir_ext             = '{0}/ext/android'.format(dir_root)
     dir_bld_extension   = '{0}/src/AdjustExtension'.format(dir_ext)
     dir_src_extension   = '{0}/src/AdjustExtension/extension/src/main/java/com/adjust/sdk'.format(dir_ext)
@@ -51,8 +52,6 @@ def build_extension_test_android_release():
 
 # Build Adobe AIR SDK test library Android extension JAR.
 def build_extension_test_android(build_mode='release'):
-    dir_scripts         = os.path.dirname(os.path.realpath(__file__))
-    dir_root            = os.path.dirname(os.path.normpath(dir_scripts))
     dir_plugin          = '{0}/test/plugin/android'.format(dir_root)
     dir_bld_extension   = '{0}/src/AdjustTestExtension'.format(dir_plugin)
     dir_src_extension   = '{0}/extension/src/main/java/com/adjust/test'.format(dir_bld_extension)
@@ -92,8 +91,6 @@ def build_extension_sdk_ios_release():
 
 # Build Adobe AIR iOS SDK extension .a library.
 def build_extension_sdk_ios(build_mode='release'):
-    dir_scripts         = os.path.dirname(os.path.realpath(__file__))
-    dir_root            = os.path.dirname(os.path.normpath(dir_scripts))
     dir_ext             = '{0}/ext/ios'.format(dir_root)
     dir_sdk             = '{0}/sdk'.format(dir_ext)
     dir_src_extension   = '{0}/src/AdjustExtension'.format(dir_ext)
@@ -126,8 +123,6 @@ def build_extension_test_ios_release():
 
 # Build Adobe AIR SDK test library iOS extension .a library.
 def build_extension_test_ios(build_mode='release'):
-    dir_scripts         = os.path.dirname(os.path.realpath(__file__))
-    dir_root            = os.path.dirname(os.path.normpath(dir_scripts))
     dir_plugin          = '{0}/test/plugin/ios'.format(dir_root)
     dir_ext             = '{0}/ext/ios'.format(dir_root)
     dir_src_extension   = '{0}/test/plugin/ios/src/AdjustTestExtension'.format(dir_root)
