@@ -88,6 +88,19 @@ def error(msg, do_exit=False):
 # ------------------------------------------------------------------
 # File system methods.
 
+def get_scripts_dir():
+    return os.path.dirname(os.path.realpath(__file__))
+
+def get_root_dir():
+    dir_scripts = get_scripts_dir()
+    # after we add scripts as a submodule to /ext/scripts:
+    # dir_ext = path_navigate_down(dir_scripts)
+    # return path_navigate_down(dir_ext)
+    return path_navigate_down(dir_scripts)
+
+def path_navigate_down(dir_path):
+    return os.path.dirname(os.path.normpath(dir_path));
+
 # Check if submodule directory is empty. Stop execution if it is.
 def check_submodule_dir(platform, submodule_dir):
     if not os.path.isdir(submodule_dir) or not os.listdir(submodule_dir):
