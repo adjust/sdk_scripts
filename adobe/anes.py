@@ -1,16 +1,15 @@
 from utils import *
 
+# Get root dir of the repo and version.
+dir_root = get_root_dir()
+version = get_version_string()
+
 # Build Adobe AIR SDK ANE.
 def build_ane_sdk():
-    dir_scripts     = os.path.dirname(os.path.realpath(__file__))
-    dir_root        = os.path.dirname(os.path.dirname(os.path.dirname(os.path.normpath(dir_scripts))))
     dir_build       = '{0}/build'.format(dir_root)
     dir_src         = '{0}/src'.format(dir_root)
     dir_ext_android = '{0}/ext/android'.format(dir_root)
     dir_ext_ios     = '{0}/ext/ios'.format(dir_root)
-
-    version = open(dir_root + '/VERSION').read()
-    version = version[:-1] # Remove end character.
 
     # Check for presence of submodule directories.
     debug_green('Checking for presence of submodules directories ...')
@@ -65,16 +64,11 @@ def build_ane_sdk():
 
 # Build Adobe AIR SDK test library ANE.
 def build_ane_test():
-    dir_scripts         = os.path.dirname(os.path.realpath(__file__))
-    dir_root            = os.path.dirname(os.path.dirname(os.path.dirname(os.path.normpath(dir_scripts))))
     dir_plugin          = '{0}/test/plugin'.format(dir_root)
     dir_plugin_android  = '{0}/android'.format(dir_plugin)
     dir_plugin_ios      = '{0}/ios'.format(dir_plugin)
     dir_plugin_src      = '{0}/src'.format(dir_plugin)
     dir_plugin_build    = '{0}/build'.format(dir_plugin)
-
-    version = open(dir_root + '/VERSION').read()
-    version = version[:-1] # Remove end character.
 
     # Go to root directory.
     debug_green('Moving to root directory ...')

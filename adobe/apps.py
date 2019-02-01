@@ -1,11 +1,11 @@
 from utils import *
 
+# Get root dir of the repo.
+dir_root = get_root_dir()
+version = get_version_string()
+
 def build_and_run_app_example_android():
-    dir_scripts = os.path.dirname(os.path.realpath(__file__))
-    dir_root    = os.path.dirname(os.path.dirname(os.path.dirname(os.path.normpath(dir_scripts))))
-    dir_app     = '{0}/example'.format(dir_root)
-    version     = open(dir_root + '/VERSION').read()
-    version     = version[:-1] # remove end character
+    dir_app = '{0}/example'.format(dir_root)
 
     # Remove Adjust SDK ANE from example app.
     debug_green('Removing SDK ANE file from example app ...')
@@ -46,11 +46,7 @@ def build_and_run_app_example_android():
     adb_shell_monkey('air.com.adjust.examples')
 
 def build_and_run_app_test_android():
-    dir_scripts = os.path.dirname(os.path.realpath(__file__))
-    dir_root    = os.path.dirname(os.path.dirname(os.path.dirname(os.path.normpath(dir_scripts))))
-    dir_app     = '{0}/test/app'.format(dir_root)
-    version     = open(dir_root + '/VERSION').read()
-    version     = version[:-1] # remove end character
+    dir_app = '{0}/test/app'.format(dir_root)
 
     # Remove Adjust SDK and test library ANE from test app.
     debug_green('Removing SDK and test library ANE files from test app ...')
@@ -93,12 +89,8 @@ def build_and_run_app_test_android():
     adb_shell_monkey('air.com.adjust.examples')
 
 def build_and_run_app_example_ios():
-    dir_scripts     = os.path.dirname(os.path.realpath(__file__))
-    dir_root        = os.path.dirname(os.path.dirname(os.path.dirname(os.path.normpath(dir_scripts))))
-    dir_app         = '{0}/example'.format(dir_root)
-    version         = open(dir_root + '/VERSION').read()
-    version         = version[:-1] # remove end character
-    file_app_xml    = '{0}/Main-app.xml'.format(dir_app)
+    dir_app      = '{0}/example'.format(dir_root)
+    file_app_xml = '{0}/Main-app.xml'.format(dir_app)
 
     path_prov_profile  = get_env_variable('DEV_ADOBE_PROVISIONING_PROFILE_PATH')
     path_keystore_file = get_env_variable('KEYSTORE_FILE_PATH')
@@ -130,11 +122,7 @@ def build_and_run_app_example_ios():
     adobe_air_package_ipa_file(path_prov_profile, path_keystore_file, file_app_xml)
 
 def build_and_run_app_test_ios():
-    dir_scripts     = os.path.dirname(os.path.realpath(__file__))
-    dir_root        = os.path.dirname(os.path.dirname(os.path.dirname(os.path.normpath(dir_scripts))))
     dir_app         = '{0}/test/app'.format(dir_root)
-    version         = open(dir_root + '/VERSION').read()
-    version         = version[:-1] # remove end character
     file_app_xml    = '{0}/Main-app.xml'.format(dir_app)
 
     path_prov_profile  = get_env_variable('DEV_ADOBE_PROVISIONING_PROFILE_PATH')

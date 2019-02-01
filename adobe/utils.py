@@ -88,6 +88,12 @@ def error(msg, do_exit=False):
 # ------------------------------------------------------------------
 # File system methods.
 
+def get_version_string():
+    dir_root = get_root_dir()
+    version  = open(dir_root + '/VERSION').read()
+    version  = version[:-1] # remove end character
+    return version
+
 def get_scripts_dir():
     return os.path.dirname(os.path.realpath(__file__))
 
