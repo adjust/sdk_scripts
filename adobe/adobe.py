@@ -13,8 +13,6 @@ if __name__ != "__main__":
     error('Error. Do not import this script, but run it explicitly.')
     exit()
 
-dir_scripts = os.path.dirname(os.path.realpath(__file__))
-
 # Usage message.
 usage_message = """List of potential commands that can be executed:
                      adobe build-extension sdk android debug
@@ -119,5 +117,5 @@ try:
         exit()
 finally:
     # Remove autocreated Python compiled files.
-    remove_files_with_pattern('*.pyc', dir_scripts)
+    remove_files_with_pattern('*.pyc', get_scripts_dir())
     debug_green('Script completed!')
