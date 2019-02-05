@@ -3,6 +3,18 @@ from utils import *
 # Get root dir of the repo.
 dir_root = get_root_dir()
 
+def build_extension_sdk(platform, build_mode='release'):
+    if platform == 'android':
+        build_extension_sdk_android(build_mode)
+    elif platform == 'ios':
+        build_extension_sdk_ios(build_mode)
+
+def build_extension_test(platform, build_mode='release'):
+    if platform == 'android':
+        build_extension_test_android(build_mode)
+    elif platform == 'ios':
+        build_extension_test_ios(build_mode)
+
 # Build Adobe AIR SDK Android extension JAR in debug mode.
 def build_extension_sdk_android_debug():
     build_extension_sdk_android('debug')

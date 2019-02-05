@@ -57,7 +57,7 @@ if args_count > 4:
 
 # Check argument values.
 if action != 'build-extension' and action != 'build-ane' and action != 'run-app':
-    error('Error. Invalid parameter [action] passed: {0}'.format(build_mode))
+    error('Error. Invalid parameter [action] passed: {0}'.format(action))
     debug(usage_message)
     exit()
 if app_type != 'sdk' and app_type != 'test' and app_type != 'example':
@@ -65,72 +65,53 @@ if app_type != 'sdk' and app_type != 'test' and app_type != 'example':
     debug(usage_message)
     exit()
 if args_count > 3 and platform != 'android' and platform != 'ios':
-    error('Error. Invalid parameter [platform] passed: {0}'.format(app_type))
+    error('Error. Invalid parameter [platform] passed: {0}'.format(platform))
     debug(usage_message)
     exit()
-if args_count > 4 and build_mode != 'debug' and platform != 'release':
-    error('Error. Invalid parameter [build_mode] passed: {0}'.format(app_type))
+if args_count > 4 and build_mode != 'debug' and build_mode != 'release':
+    error('Error. Invalid parameter [build_mode] passed: {0}'.format(build_mode))
     debug(usage_message)
     exit()
 
 try:
-    if args_count == 5:
-        # In here we build native extension.
-
-        if action == 'build-extension':
-            if app_type == 'sdk':
-                if platform == 'android':
-                    extension.build_extension_sdk_android(build_mode)
-                elif platform == 'ios':
-                    extension.build_extension_sdk_ios(build_mode)
-            elif app_type == 'test':
-                if platform == 'android':
-                    extension.build_extension_test_android(build_mode)
-                elif platform == 'ios':
-                    extension.build_extension_test_ios(build_mode)
-
-    elif args_count == 3:
-        # In here we build ANE.
-
-        if action == 'build-ane':
-            if app_type == 'sdk':
+    if args_count == 5 and action == 'build-extension':
+        if app_type == 'sdk':
+            extension.build_extension_sdk(platform, build_mode)
+        elif app_type == 'test':
+            extension.build_extension_test(platform, build_mode)
+    elif args_count == 3 and action == 'build-ane':
+        if app_type == 'sdk':
+            extension.build_extension_sdk_android_release()
+            extension.build_extension_sdk_ios_release()
+            ane.build_ane_sdk()
+        elif app_type == 'test':
+            extension.build_extension_test_android_debug()
+            extension.build_extension_test_ios_debug()
+            ane.build_ane_test()
+    elif args_count == 4 and action == 'run-app':
+            if app_type == 'example':
                 extension.build_extension_sdk_android_release()
                 extension.build_extension_sdk_ios_release()
                 ane.build_ane_sdk()
-            elif app_type == 'test':
-                extension.build_extension_test_android_debug()
-                extension.build_extension_test_ios_debug()
-                ane.build_ane_test()
-
-    elif action == 'run-app':
-            if app_type == 'example':
                 if platform == 'android':
-                    extension.build_extension_sdk_android_release()
-                    extension.build_extension_sdk_ios_release()
-                    ane.build_ane_sdk()
                     app.build_and_run_app_example_android()
                 elif platform == 'ios':
-                    extension.build_extension_sdk_android_release()
-                    extension.build_extension_sdk_ios_release()
-                    ane.build_ane_sdk()
                     app.build_and_run_app_example_ios()
             elif app_type == 'test':
+                extension.build_extension_sdk_android_release()
+                extension.build_extension_sdk_ios_release()
+                extension.build_extension_test_android_debug()
+                extension.build_extension_test_ios_debug()
+                ane.build_ane_sdk()
+                ane.build_ane_test()
                 if platform == 'android':
-                    extension.build_extension_sdk_android_release()
-                    extension.build_extension_sdk_ios_release()
-                    extension.build_extension_test_android_debug()
-                    extension.build_extension_test_ios_debug()
-                    ane.build_ane_sdk()
-                    ane.build_ane_test()
                     app.build_and_run_app_test_android()
                 elif platform == 'ios':
-                    extension.build_extension_sdk_android_release()
-                    extension.build_extension_sdk_ios_release()
-                    extension.build_extension_test_android_debug()
-                    extension.build_extension_test_ios_debug()
-                    ane.build_ane_sdk()
-                    ane.build_ane_test()
                     app.build_and_run_app_test_ios()
+    else:
+        error('Error. Wrong arguments.')
+        debug(usage_message)
+        exit()
 finally:
     # Remove autocreated Python compiled files.
     remove_files_with_pattern('*.pyc', dir_scripts)
