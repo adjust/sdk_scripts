@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 from utils import *
 import anes as ane
 import apps as app
@@ -18,6 +17,7 @@ dir_scripts = os.path.dirname(os.path.realpath(__file__))
 
 # ------------------------------------------------------------------
 # Arguments check.
+# ------------------------------------------------------------------
 
 # Usage message.
 usage_message = """List of potential commands that can be executed:
@@ -34,10 +34,13 @@ usage_message = """List of potential commands that can be executed:
                      adobe run-app example android
                      adobe run-app example ios
                      adobe run-app test android
-                     adobe run-app test ios"""
+                     adobe run-app test ios
+                """
+
+args_count = len(sys.argv)
 
 # Too few arguments.
-if len(sys.argv) < 3 or len(sys.argv) > 5:
+if args_count < 3 or args_count > 5:
     error('Error. Wrong number of arguments.')
     debug(usage_message)
     exit()
@@ -45,128 +48,74 @@ if len(sys.argv) < 3 or len(sys.argv) > 5:
 # At this point, valid number of arguments has been passed to the script.
 # Let's check how many of them are there (can be either 4 or 5).
 
+action = sys.argv[1].lower()
+app_type = sys.argv[2].lower()
+if args_count > 3:
+    platform = sys.argv[3].lower()
+if args_count > 4:
+    build_mode = sys.argv[4].lower()
+
+# Check argument values.
+if action != 'build-extension' and action != 'build-ane' and action != 'run-app':
+    error('Error. Invalid parameter [action] passed: {0}'.format(build_mode))
+    debug(usage_message)
+    exit()
+if app_type != 'sdk' and app_type != 'test' and app_type != 'example':
+    error('Error. Invalid parameter [app_type] passed: {0}'.format(app_type))
+    debug(usage_message)
+    exit()
+if args_count > 3 and platform != 'android' and platform != 'ios':
+    error('Error. Invalid parameter [platform] passed: {0}'.format(app_type))
+    debug(usage_message)
+    exit()
+if args_count > 4 and build_mode != 'debug' and platform != 'release':
+    error('Error. Invalid parameter [build_mode] passed: {0}'.format(app_type))
+    debug(usage_message)
+    exit()
+
 try:
-    if len(sys.argv) == 5:
+    if args_count == 5:
         # In here we build native extension.
 
-        # argv[1] possible values:
-        #  build-extension
-        # argv[2] possible values:
-        #  sdk
-        #  test
-        # argv[3] possible values:
-        #  android
-        #  ios
-        # argv[4] possible values:
-        #  debug
-        #  release
+        if action == 'build-extension':
+            if app_type == 'sdk':
+                if platform == 'android':
+                    extension.build_extension_sdk_android(build_mode)
+                elif platform == 'ios':
+                    extension.build_extension_sdk_ios(build_mode)
+            elif app_type == 'test':
+                if platform == 'android':
+                    extension.build_extension_test_android(build_mode)
+                elif platform == 'ios':
+                    extension.build_extension_test_ios(build_mode)
 
-        if sys.argv[1] == 'build-extension':
-            if sys.argv[2] == 'sdk':
-                if sys.argv[3] == 'android':
-                    if sys.argv[4] == 'debug':
-                        extension.build_extension_sdk_android_debug()
-                    elif sys.argv[4] == 'release':
-                        extension.build_extension_sdk_android_release()
-                    else:
-                        # Invalid parameter name.
-                        error('Error. Invalid parameter passed: {0}'.format(sys.argv[4]))
-                        debug(usage_message)
-                        exit()
-                elif sys.argv[3] == 'ios':
-                    if sys.argv[4] == 'debug':
-                        extension.build_extension_sdk_ios_debug()
-                    elif sys.argv[4] == 'release':
-                        extension.build_extension_sdk_ios_release()
-                    else:
-                        # Invalid parameter name.
-                        error('Error. Invalid parameter passed: {0}'.format(sys.argv[4]))
-                        debug(usage_message)
-                        exit()
-                else:
-                    # Invalid parameter name.
-                    error('Error. Invalid parameter passed: {0}'.format(sys.argv[3]))
-                    debug(usage_message)
-                    exit()
-            elif sys.argv[2] == 'test':
-                if sys.argv[3] == 'android':
-                    if sys.argv[4] == 'debug':
-                        extension.build_extension_test_android_debug()
-                    elif sys.argv[4] == 'release':
-                        extension.build_extension_test_android_release()
-                    else:
-                        # Invalid parameter name.
-                        error('Error. Invalid parameter passed: {0}'.format(sys.argv[4]))
-                        debug(usage_message)
-                        exit()
-                elif sys.argv[3] == 'ios':
-                    if sys.argv[4] == 'debug':
-                        extension.build_extension_test_ios_debug()
-                    elif sys.argv[4] == 'release':
-                        extension.build_extension_test_ios_release()
-                    else:
-                        # Invalid parameter name.
-                        error('Error. Invalid parameter passed: {0}'.format(sys.argv[4]))
-                        debug(usage_message)
-                        exit()
-                else:
-                    # Invalid parameter name.
-                    error('Error. Invalid parameter passed: {0}'.format(sys.argv[3]))
-                    debug(usage_message)
-                    exit()
-            else:
-                # Invalid parameter name.
-                error('Error. Invalid parameter passed: {0}'.format(sys.argv[2]))
-                debug(usage_message)
-                exit()
-        else:
-            # Invalid parameter name.
-            error('Error. Invalid parameter passed: {0}'.format(sys.argv[1]))
-            debug(usage_message)
-            exit()
-    elif len(sys.argv) == 3:
+    elif args_count == 3:
         # In here we build ANE.
 
-        # argv[1] possible values:
-        #  build-ane
-        # argv[2] possible values:
-        #  sdk
-        #  test
-
-        if sys.argv[1] == 'build-ane':
-            if sys.argv[2] == 'sdk':
+        if action == 'build-ane':
+            if app_type == 'sdk':
                 extension.build_extension_sdk_android_release()
                 extension.build_extension_sdk_ios_release()
                 ane.build_ane_sdk()
-            elif sys.argv[2] == 'test':
+            elif app_type == 'test':
                 extension.build_extension_test_android_debug()
                 extension.build_extension_test_ios_debug()
                 ane.build_ane_test()
-            else:
-                # Invalid parameter name.
-                error('Error. Invalid parameter passed: {0}'.format(sys.argv[2]))
-                debug(usage_message)
-                exit()
-        else:
-            # Invalid parameter name.
-            error('Error. Invalid parameter passed: {0}'.format(sys.argv[1]))
-            debug(usage_message)
-            exit()
-    else:
-        if sys.argv[1] == 'run-app':
-            if sys.argv[2] == 'example':
-                if sys.argv[3] == 'android':
+
+    elif action == 'run-app':
+            if app_type == 'example':
+                if platform == 'android':
                     extension.build_extension_sdk_android_release()
                     extension.build_extension_sdk_ios_release()
                     ane.build_ane_sdk()
                     app.build_and_run_app_example_android()
-                elif sys.argv[3] == 'ios':
+                elif platform == 'ios':
                     extension.build_extension_sdk_android_release()
                     extension.build_extension_sdk_ios_release()
                     ane.build_ane_sdk()
                     app.build_and_run_app_example_ios()
-            elif sys.argv[2] == 'test':
-                if sys.argv[3] == 'android':
+            elif app_type == 'test':
+                if platform == 'android':
                     extension.build_extension_sdk_android_release()
                     extension.build_extension_sdk_ios_release()
                     extension.build_extension_test_android_debug()
@@ -174,7 +123,7 @@ try:
                     ane.build_ane_sdk()
                     ane.build_ane_test()
                     app.build_and_run_app_test_android()
-                elif sys.argv[3] == 'ios':
+                elif platform == 'ios':
                     extension.build_extension_sdk_android_release()
                     extension.build_extension_sdk_ios_release()
                     extension.build_extension_test_android_debug()
@@ -182,11 +131,6 @@ try:
                     ane.build_ane_sdk()
                     ane.build_ane_test()
                     app.build_and_run_app_test_ios()
-            else:
-                # Invalid parameter name.
-                error('Error. Invalid parameter passed: {0}'.format(sys.argv[2]))
-                debug(usage_message)
-                exit()
 finally:
     # Remove autocreated Python compiled files.
     remove_files_with_pattern('*.pyc', dir_scripts)
