@@ -15,10 +15,6 @@ if __name__ != "__main__":
 
 dir_scripts = os.path.dirname(os.path.realpath(__file__))
 
-# ------------------------------------------------------------------
-# Arguments check.
-# ------------------------------------------------------------------
-
 # Usage message.
 usage_message = """List of potential commands that can be executed:
                      adobe build-extension sdk android debug
@@ -74,11 +70,17 @@ if args_count > 4 and build_mode != 'debug' and build_mode != 'release':
     exit()
 
 try:
+    # ------------------------------------------------------------------
+    # Build extension.
+    # ------------------------------------------------------------------
     if args_count == 5 and action == 'build-extension':
         if app_type == 'sdk':
             extension.build_extension_sdk(platform, build_mode)
         elif app_type == 'test':
             extension.build_extension_test(platform, build_mode)
+    # ------------------------------------------------------------------
+    # Build ANE.
+    # ------------------------------------------------------------------
     elif args_count == 3 and action == 'build-ane':
         if app_type == 'sdk':
             extension.build_extension_sdk_android_release()
@@ -88,26 +90,29 @@ try:
             extension.build_extension_test_android_debug()
             extension.build_extension_test_ios_debug()
             ane.build_ane_test()
+    # ------------------------------------------------------------------
+    # Run example or test app.
+    # ------------------------------------------------------------------
     elif args_count == 4 and action == 'run-app':
-            if app_type == 'example':
-                extension.build_extension_sdk_android_release()
-                extension.build_extension_sdk_ios_release()
-                ane.build_ane_sdk()
-                if platform == 'android':
-                    app.build_and_run_app_example_android()
-                elif platform == 'ios':
-                    app.build_and_run_app_example_ios()
-            elif app_type == 'test':
-                extension.build_extension_sdk_android_release()
-                extension.build_extension_sdk_ios_release()
-                extension.build_extension_test_android_debug()
-                extension.build_extension_test_ios_debug()
-                ane.build_ane_sdk()
-                ane.build_ane_test()
-                if platform == 'android':
-                    app.build_and_run_app_test_android()
-                elif platform == 'ios':
-                    app.build_and_run_app_test_ios()
+        if app_type == 'example':
+            extension.build_extension_sdk_android_release()
+            extension.build_extension_sdk_ios_release()
+            ane.build_ane_sdk()
+            if platform == 'android':
+                app.build_and_run_app_example_android()
+            elif platform == 'ios':
+                app.build_and_run_app_example_ios()
+        elif app_type == 'test':
+            extension.build_extension_sdk_android_release()
+            extension.build_extension_sdk_ios_release()
+            extension.build_extension_test_android_debug()
+            extension.build_extension_test_ios_debug()
+            ane.build_ane_sdk()
+            ane.build_ane_test()
+            if platform == 'android':
+                app.build_and_run_app_test_android()
+            elif platform == 'ios':
+                app.build_and_run_app_test_ios()
     else:
         error('Error. Wrong arguments.')
         debug(usage_message)
