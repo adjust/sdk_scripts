@@ -1,19 +1,26 @@
 from utils import *
 
-# Get root dir of the repo.
 dir_root = get_root_dir()
 
+# ------------------------------------------------------------------
+# Common interface.
+
+# Build SDK extension for given platform and build mode ('release' by default).
 def build_extension_sdk(platform, build_mode='release'):
     if platform == 'android':
         build_extension_sdk_android(build_mode)
     elif platform == 'ios':
         build_extension_sdk_ios(build_mode)
 
+# Build test extension for given platform and build mode ('release' by default).
 def build_extension_test(platform, build_mode='release'):
     if platform == 'android':
         build_extension_test_android(build_mode)
     elif platform == 'ios':
         build_extension_test_ios(build_mode)
+
+# ------------------------------------------------------------------
+# Android interface.
 
 # Build Adobe AIR SDK Android extension JAR in debug mode.
 def build_extension_sdk_android_debug():
@@ -92,6 +99,9 @@ def build_extension_test_android(build_mode='release'):
     # Copy generated Android test extension JAR to it's destination directory.
     debug_green('Copying generated adjust-android-test.jar from {0} to {1} ...'.format(dir_src_jar, dir_plugin))
     copy_file('{0}/adjust-android-test.jar'.format(dir_src_jar), '{0}/adjust-android-test.jar'.format(dir_plugin))
+
+# ------------------------------------------------------------------
+# iOS interface.
 
 # Build Adobe AIR SDK iOS extension .a library in debug mode.
 def build_extension_sdk_ios_debug():

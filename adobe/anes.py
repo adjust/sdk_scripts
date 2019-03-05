@@ -1,6 +1,5 @@
 from utils import *
 
-# Get root dir of the repo and version.
 dir_root = get_root_dir()
 version = get_version_string()
 

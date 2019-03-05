@@ -42,7 +42,7 @@ if args_count < 3 or args_count > 5:
 # At this point, valid number of arguments has been passed to the script.
 # Let's check how many of them are there (can be either 4 or 5).
 
-action = sys.argv[1].lower()
+build_object = sys.argv[1].lower()
 app_type = sys.argv[2].lower()
 if args_count > 3:
     platform = sys.argv[3].lower()
@@ -50,8 +50,8 @@ if args_count > 4:
     build_mode = sys.argv[4].lower()
 
 # Check argument values.
-if action != 'build-extension' and action != 'build-ane' and action != 'run-app':
-    error('Error. Invalid parameter [action] passed: {0}'.format(action))
+if build_object != 'build-extension' and build_object != 'build-ane' and build_object != 'run-app':
+    error('Error. Invalid parameter [build_object] passed: {0}'.format(build_object))
     debug(usage_message)
     exit()
 if app_type != 'sdk' and app_type != 'test' and app_type != 'example':
@@ -71,7 +71,7 @@ try:
     # ------------------------------------------------------------------
     # Build extension.
     # ------------------------------------------------------------------
-    if args_count == 5 and action == 'build-extension':
+    if args_count == 5 and build_object == 'build-extension':
         if app_type == 'sdk':
             extension.build_extension_sdk(platform, build_mode)
         elif app_type == 'test':
@@ -79,7 +79,7 @@ try:
     # ------------------------------------------------------------------
     # Build ANE.
     # ------------------------------------------------------------------
-    elif args_count == 3 and action == 'build-ane':
+    elif args_count == 3 and build_object == 'build-ane':
         if app_type == 'sdk':
             extension.build_extension_sdk_android_release()
             extension.build_extension_sdk_ios_release()
@@ -91,7 +91,7 @@ try:
     # ------------------------------------------------------------------
     # Run example or test app.
     # ------------------------------------------------------------------
-    elif args_count == 4 and action == 'run-app':
+    elif args_count == 4 and build_object == 'run-app':
         if app_type == 'example':
             extension.build_extension_sdk_android_release()
             extension.build_extension_sdk_ios_release()

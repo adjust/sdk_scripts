@@ -88,22 +88,26 @@ def error(msg, do_exit=False):
 # ------------------------------------------------------------------
 # File system methods.
 
+# Get VERSION number string.
 def get_version_string():
     dir_root = get_root_dir()
     version  = open(dir_root + '/VERSION').read()
     version  = version[:-1] # remove end character
     return version
 
+# Get scripts directory path.
 def get_scripts_dir():
     return os.path.dirname(os.path.realpath(__file__))
 
+# Get SDK root directory path.
 def get_root_dir():
     dir_scripts = get_scripts_dir()
-    # after we add scripts as a submodule to /ext/scripts:
+    # After we add scripts as a submodule to /ext/scripts:
     # dir_ext = path_navigate_down(dir_scripts)
     # return path_navigate_down(dir_ext)
     return path_navigate_down(dir_scripts)
 
+# Get partent directory of the given path.
 def path_navigate_down(dir_path):
     return os.path.dirname(os.path.normpath(dir_path));
 
