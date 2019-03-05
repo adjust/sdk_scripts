@@ -102,7 +102,8 @@ def get_scripts_dir():
 # Get SDK root directory path.
 def get_root_dir():
     dir_scripts = get_scripts_dir()
-    dir_ext = path_navigate_down(dir_scripts)
+    dir_platform = path_navigate_down(dir_scripts)
+    dir_ext = path_navigate_down(dir_platform)
     return path_navigate_down(dir_ext)
 
 # Get partent directory of the given path.
