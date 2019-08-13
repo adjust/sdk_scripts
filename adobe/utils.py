@@ -239,20 +239,25 @@ def adobe_air_adt_sdk(version):
     adt           = '{0}/bin/adt'.format(air_sdk_path)
     
     execute_command([adt, '-package', '-target', 'ane', '../Adjust-{0}.ane'.format(version), 'extension.xml', '-swc', 'Adjust.swc', 
-        '-platform', 'Android-ARM', '-C', 'Android', '.', '-platform', 'Android-x86', '-C', 'Android-x86', '.',
-        '-platform', 'iPhone-ARM', '-C', 'iOS', '.', '-platformoptions', 'iOS/platformoptions.xml',
-        '-platform', 'iPhone-x86', '-C', 'iOS-x86', '.', '-platform', 'default', '-C', 'default', '.'])
+        '-platform', 'Android-ARM', '-C', 'Android', '.',
+        '-platform', 'Android-ARM64', '-C', 'Android64', '.',
+        '-platform', 'Android-x86', '-C', 'Android-x86', '.',
+        '-platform', 'iPhone-ARM', '-C', 'iOS', '.', '-platformoptions', 'iOS/platformoptions_ios.xml',
+        '-platform', 'iPhone-x86', '-C', 'iOS-x86', '.',
+        '-platform', 'default', '-C', 'default', '.'])
 
 # Run 'adt' command for SDK test library.
 def adobe_air_adt_test(root_dir, build_dir, version):
     air_sdk_path  = get_env_variable('AIR_SDK_PATH');
     adt           = '{0}/bin/adt'.format(air_sdk_path)
 
-    execute_command([adt, '-package', '-target', 'ane', '{0}/AdjustTest-{1}.ane'.format(root_dir, version), 'extension.xml', 
-        '-swc', 'AdjustTest.swc', '-platform', 'Android-ARM', '-C', 'Android', '.', '-platformoptions', 
-        '{0}/Android/platformoptions_android.xml'.format(build_dir), '-platform', 'Android-x86', '-C', 'Android-x86', '.',
+    execute_command([adt, '-package', '-target', 'ane', '{0}/AdjustTest-{1}.ane'.format(root_dir, version), 'extension.xml', '-swc', 'AdjustTest.swc',
+        '-platform', 'Android-ARM', '-C', 'Android', '.', '-platformoptions', '{0}/Android/platformoptions_android.xml'.format(build_dir),
+        '-platform', 'Android-ARM64', '-C', 'Android64', '.', '-platformoptions', '{0}/Android/platformoptions_android.xml'.format(build_dir),
+        '-platform', 'Android-x86', '-C', 'Android-x86', '.',
         '-platform', 'iPhone-ARM', '-C', 'iOS', '.', '-platformoptions', '{0}/iOS/platformoptions_ios.xml'.format(build_dir),
-        '-platform', 'iPhone-x86', '-C', 'iOS-x86', '.', '-platform', 'default', '-C', 'default', '.'])
+        '-platform', 'iPhone-x86', '-C', 'iOS-x86', '.', 
+        '-platform', 'default', '-C', 'default', '.'])
 
 # Run 'unzip' command.
 def adobe_air_unzip(dir_path, adjust_swc_path):
@@ -274,7 +279,7 @@ def adobe_air_make_sample_cert():
 # Package Adobe AIR app APK file.
 def adobe_air_package_apk_file():
     debug_blue('Packaging APK file, please wait ...')
-    command = 'adt -package -target apk-debug -storetype pkcs12 -keystore sampleCert.pfx Main.apk Main-app.xml Main.swf -extdir lib'
+    command = 'adt -package -target apk-debug -arch armv8 -storetype pkcs12 -keystore sampleCert.pfx Main.apk Main-app.xml Main.swf -extdir lib'
     debug_blue('Executing: [{0}] ...'.format(command))
     os.system('echo pass|{0}'.format(command))
     debug_blue('Packaging APK file done.')

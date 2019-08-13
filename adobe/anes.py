@@ -33,12 +33,14 @@ def build_ane_sdk():
 
     # Recreate build directories.
     recreate_dir('{0}/Android'.format(dir_build))
+    recreate_dir('{0}/Android64'.format(dir_build))
     recreate_dir('{0}/iOS'.format(dir_build))
     recreate_dir('{0}/Android-x86'.format(dir_build))
     recreate_dir('{0}/iOS-x86'.format(dir_build))
 
     # Copy generated files into build directories.
     copy_file('{0}/adjust-android.jar'.format(dir_ext_android), '{0}/Android/adjust-android.jar'.format(dir_build))
+    copy_file('{0}/adjust-android.jar'.format(dir_ext_android), '{0}/Android64/adjust-android.jar'.format(dir_build))
     copy_file('{0}/libAdjustExtension.a'.format(dir_ext_ios), '{0}/iOS/libAdjustExtension.a'.format(dir_build))
     copy_dir_content('{0}/AdjustSdk.framework'.format(dir_ext_ios), '{0}/iOS/AdjustSdk.framework'.format(dir_build))
     copy_file('{0}/adjust-android.jar'.format(dir_ext_android), '{0}/Android-x86/adjust-android.jar'.format(dir_build))
@@ -52,11 +54,12 @@ def build_ane_sdk():
     # Generate SDK ANE file.
     debug_green('Running ADT and finalizing the ANE file generation ...')
     adobe_air_unzip('{0}/Android'.format(dir_build), '{0}/Adjust.swc'.format(dir_build))
+    adobe_air_unzip('{0}/Android64'.format(dir_build), '{0}/Adjust.swc'.format(dir_build))
     adobe_air_unzip('{0}/iOS'.format(dir_build), '{0}/Adjust.swc'.format(dir_build))
     adobe_air_unzip('{0}/Android-x86'.format(dir_build), '{0}/Adjust.swc'.format(dir_build))
     adobe_air_unzip('{0}/iOS-x86'.format(dir_build), '{0}/Adjust.swc'.format(dir_build))
-    copy_file('{0}/platformoptions.xml'.format(dir_src), '{0}/iOS/platformoptions.xml'.format(dir_build))
-    copy_file('{0}/platformoptions.xml'.format(dir_src), '{0}/iOS-x86/platformoptions.xml'.format(dir_build))
+    copy_file('{0}/platformoptions_ios.xml'.format(dir_src), '{0}/iOS/platformoptions_ios.xml'.format(dir_build))
+    copy_file('{0}/platformoptions_ios.xml'.format(dir_src), '{0}/iOS-x86/platformoptions_ios.xml'.format(dir_build))
     copy_file('{0}/extension.xml'.format(dir_src), '{0}/extension.xml'.format(dir_build))
     change_dir(dir_build)
     adobe_air_adt_sdk(version)
@@ -87,6 +90,7 @@ def build_ane_test():
 
     # Recreate build directories.
     recreate_dir('{0}/Android'.format(dir_plugin_build))
+    recreate_dir('{0}/Android64'.format(dir_plugin_build))
     recreate_dir('{0}/iOS'.format(dir_plugin_build))
     recreate_dir('{0}/Android-x86'.format(dir_plugin_build))
     recreate_dir('{0}/iOS-x86'.format(dir_plugin_build))
@@ -94,6 +98,8 @@ def build_ane_test():
     # Copy generated files into build directories.
     copy_file('{0}/adjust-android-test.jar'.format(dir_plugin_android), '{0}/Android/adjust-android-test.jar'.format(dir_plugin_build))
     copy_file('{0}/src/AdjustTestExtension/extension/libs/gson-2.8.0.jar'.format(dir_plugin_android), '{0}/Android/gson-2.8.0.jar'.format(dir_plugin_build))
+    copy_file('{0}/adjust-android-test.jar'.format(dir_plugin_android), '{0}/Android64/adjust-android-test.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/gson-2.8.0.jar'.format(dir_plugin_android), '{0}/Android64/gson-2.8.0.jar'.format(dir_plugin_build))
     copy_file('{0}/libAdjustTestExtension.a'.format(dir_plugin_ios), '{0}/iOS/libAdjustTestExtension.a'.format(dir_plugin_build))
     copy_dir_content('{0}/AdjustTestLibrary.framework'.format(dir_plugin_ios), '{0}/iOS/AdjustTestLibrary.framework'.format(dir_plugin_build))
     copy_file('{0}/adjust-android-test.jar'.format(dir_plugin_android), '{0}/Android-x86/adjust-android-test.jar'.format(dir_plugin_build))
@@ -105,13 +111,15 @@ def build_ane_test():
     debug_green('Making SWC file ...')
     adobe_air_compc_swc_test(dir_plugin, dir_plugin_build)
 
-    # Generate SDK ANE file.
+    # Generate SDK test ANE file.
     debug_green('Running ADT and finalizing the ANE file generation ...')
     adobe_air_unzip('{0}/Android'.format(dir_plugin_build), '{0}/AdjustTest.swc'.format(dir_plugin_build))
+    adobe_air_unzip('{0}/Android64'.format(dir_plugin_build), '{0}/AdjustTest.swc'.format(dir_plugin_build))
     adobe_air_unzip('{0}/iOS'.format(dir_plugin_build), '{0}/AdjustTest.swc'.format(dir_plugin_build))
     adobe_air_unzip('{0}/Android-x86'.format(dir_plugin_build), '{0}/AdjustTest.swc'.format(dir_plugin_build))
     adobe_air_unzip('{0}/iOS-x86'.format(dir_plugin_build), '{0}/AdjustTest.swc'.format(dir_plugin_build))
     copy_file('{0}/platformoptions_android.xml'.format(dir_plugin_src), '{0}/Android/platformoptions_android.xml'.format(dir_plugin_build))
+    copy_file('{0}/platformoptions_android.xml'.format(dir_plugin_src), '{0}/Android64/platformoptions_android.xml'.format(dir_plugin_build))
     copy_file('{0}/platformoptions_ios.xml'.format(dir_plugin_src), '{0}/iOS/platformoptions_ios.xml'.format(dir_plugin_build))
     copy_file('{0}/platformoptions_android.xml'.format(dir_plugin_src), '{0}/Android-x86/platformoptions_android.xml'.format(dir_plugin_build))
     copy_file('{0}/platformoptions_ios.xml'.format(dir_plugin_src), '{0}/iOS-x86/platformoptions_ios.xml'.format(dir_plugin_build))
