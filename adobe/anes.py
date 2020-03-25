@@ -97,13 +97,19 @@ def build_ane_test():
 
     # Copy generated files into build directories.
     copy_file('{0}/adjust-android-test.jar'.format(dir_plugin_android), '{0}/Android/adjust-android-test.jar'.format(dir_plugin_build))
-    copy_file('{0}/src/AdjustTestExtension/extension/libs/gson-2.8.0.jar'.format(dir_plugin_android), '{0}/Android/gson-2.8.0.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/gson-2.8.6.jar'.format(dir_plugin_android), '{0}/Android/gson-2.8.6.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/Java-WebSocket-1.4.0.jar'.format(dir_plugin_android), '{0}/Android/Java-WebSocket-1.4.0.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/slf4j-api-1.7.30.jar'.format(dir_plugin_android), '{0}/Android/slf4j-api-1.7.30.jar'.format(dir_plugin_build))
     copy_file('{0}/adjust-android-test.jar'.format(dir_plugin_android), '{0}/Android64/adjust-android-test.jar'.format(dir_plugin_build))
-    copy_file('{0}/src/AdjustTestExtension/extension/libs/gson-2.8.0.jar'.format(dir_plugin_android), '{0}/Android64/gson-2.8.0.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/gson-2.8.6.jar'.format(dir_plugin_android), '{0}/Android64/gson-2.8.6.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/Java-WebSocket-1.4.0.jar'.format(dir_plugin_android), '{0}/Android64/Java-WebSocket-1.4.0.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/slf4j-api-1.7.30.jar'.format(dir_plugin_android), '{0}/Android64/slf4j-api-1.7.30.jar'.format(dir_plugin_build))
     copy_file('{0}/libAdjustTestExtension.a'.format(dir_plugin_ios), '{0}/iOS/libAdjustTestExtension.a'.format(dir_plugin_build))
     copy_dir_content('{0}/AdjustTestLibrary.framework'.format(dir_plugin_ios), '{0}/iOS/AdjustTestLibrary.framework'.format(dir_plugin_build))
     copy_file('{0}/adjust-android-test.jar'.format(dir_plugin_android), '{0}/Android-x86/adjust-android-test.jar'.format(dir_plugin_build))
-    copy_file('{0}/src/AdjustTestExtension/extension/libs/gson-2.8.0.jar'.format(dir_plugin_android), '{0}/Android-x86/gson-2.8.0.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/gson-2.8.6.jar'.format(dir_plugin_android), '{0}/Android-x86/gson-2.8.6.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/Java-WebSocket-1.4.0.jar'.format(dir_plugin_android), '{0}/Android-x86/Java-WebSocket-1.4.0.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/slf4j-api-1.7.30.jar'.format(dir_plugin_android), '{0}/Android-x86/slf4j-api-1.7.30.jar'.format(dir_plugin_build))
     copy_file('{0}/libAdjustTestExtension.a'.format(dir_plugin_ios), '{0}/iOS-x86/libAdjustTestExtension.a'.format(dir_plugin_build))
     copy_dir_content('{0}/AdjustTestLibrary.framework'.format(dir_plugin_ios), '{0}/iOS-x86/AdjustTestLibrary.framework'.format(dir_plugin_build))
 

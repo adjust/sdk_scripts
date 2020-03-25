@@ -84,7 +84,7 @@ def build_and_run_app_test_android():
     adb_install_apk('Main.apk')
 
     # Start test app.
-    debug_green('Example app installed. Starting the example app on the device ...')
+    debug_green('Test app installed. Starting the test app on the device ...')
     adb_shell_monkey('air.com.adjust.examples')
 
 def build_and_run_app_example_ios():
