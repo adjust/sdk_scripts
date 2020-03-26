@@ -252,10 +252,10 @@ def adobe_air_adt_test(root_dir, build_dir, version):
     adt           = '{0}/bin/adt'.format(air_sdk_path)
 
     execute_command([adt, '-package', '-target', 'ane', '{0}/AdjustTest-{1}.ane'.format(root_dir, version), 'extension.xml', '-swc', 'AdjustTest.swc',
-        '-platform', 'Android-ARM', '-C', 'Android', '.', '-platformoptions', '{0}/Android/platformoptions_android.xml'.format(build_dir),
-        '-platform', 'Android-ARM64', '-C', 'Android64', '.', '-platformoptions', '{0}/Android/platformoptions_android.xml'.format(build_dir),
+        '-platform', 'Android-ARM', '-C', 'Android', '.', '-platformoptions', '{0}/Android/platformoptions_android_test.xml'.format(build_dir),
+        '-platform', 'Android-ARM64', '-C', 'Android64', '.', '-platformoptions', '{0}/Android/platformoptions_android_test.xml'.format(build_dir),
         '-platform', 'Android-x86', '-C', 'Android-x86', '.',
-        '-platform', 'iPhone-ARM', '-C', 'iOS', '.', '-platformoptions', '{0}/iOS/platformoptions_ios.xml'.format(build_dir),
+        '-platform', 'iPhone-ARM', '-C', 'iOS', '.', '-platformoptions', '{0}/iOS/platformoptions_ios_test.xml'.format(build_dir),
         '-platform', 'iPhone-x86', '-C', 'iOS-x86', '.', 
         '-platform', 'default', '-C', 'default', '.'])
 
