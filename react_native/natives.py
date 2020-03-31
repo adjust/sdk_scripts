@@ -10,17 +10,17 @@ def build_native_sdk(platform, build_mode='release'):
     if platform == 'android':
         build_native_sdk_android(build_mode)
     elif platform == 'ios':
-        build_native_sdk_ios(build_mode)
+        build_native_sdk_ios()
 
 # ------------------------------------------------------------------
 # build native test library for given platform and build mode
 # 'release' mode used by default if none specified
 # ------------------------------------------------------------------
-def build_native_test_library(platform, build_mode='release'):
+def build_native_test_library(platform, build_mode='debug'):
     if platform == 'android':
         build_native_test_library_android(build_mode)
     elif platform == 'ios':
-        build_native_test_library_ios(build_mode)
+        build_native_test_library_ios()
 
 # ------------------------------------------------------------------
 # build native Android SDK
@@ -59,7 +59,7 @@ def build_native_sdk_android(build_mode='release'):
 # ------------------------------------------------------------------
 # build native Android test library
 # ------------------------------------------------------------------
-def build_native_test_library_android(build_mode='release'):
+def build_native_test_library_android(build_mode='debug'):
     dir_ext     = '{0}/ext/android'.format(dir_root)
     dir_sdk     = '{0}/ext/android/sdk'.format(dir_root)
     dir_build   = '{0}/Adjust'.format(dir_sdk)
@@ -93,7 +93,7 @@ def build_native_test_library_android(build_mode='release'):
 # ------------------------------------------------------------------
 # build native iOS SDK
 # ------------------------------------------------------------------
-def build_native_sdk_ios(build_mode='release'):
+def build_native_sdk_ios():
     dir_ext     = '{0}/ext/ios'.format(dir_root)
     dir_sdk     = '{0}/ext/ios/sdk'.format(dir_root)
     dir_src     = '{0}/Adjust'.format(dir_sdk)
@@ -105,7 +105,7 @@ def build_native_sdk_ios(build_mode='release'):
 # ------------------------------------------------------------------
 # build native iOS test library
 # ------------------------------------------------------------------
-def build_native_test_library_ios(build_mode='release'):
+def build_native_test_library_ios():
     dir_ext     = '{0}/ext/ios'.format(dir_root)
     dir_sdk     = '{0}/ext/ios/sdk'.format(dir_root)
     dir_src     = '{0}/AdjustTests/AdjustTestLibrary/AdjustTestLibrary/'.format(dir_sdk)

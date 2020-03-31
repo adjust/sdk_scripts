@@ -92,11 +92,14 @@ try:
     # ------------------------------------------------------------------
     elif args_count == 4 and action_type == 'run':
         if target_type == 'example-app':
+            natives.build_native_sdk(platform)
             if platform == 'android':
                 apps.build_and_run_example_app_android()
             elif platform == 'ios':
                 apps.build_and_run_example_app_ios()
         elif target_type == 'test-app':
+            natives.build_native_sdk(platform)
+            natives.build_native_test_library(platform)
             if platform == 'android':
                 apps.build_and_run_test_app_android()
             elif platform == 'ios':
