@@ -1,19 +1,20 @@
 #!/usr/bin/python
+
 from utils import *
 import anes as ane
 import apps as app
 import extensions as extension
 import argparse
 
-# Set script tag.
+# set script tag
 set_log_tag('ADOBE-AIR-SDK')
 
-# Make sure script gets executed and not imported somewhere.
+# make sure script gets executed and not imported somewhere
 if __name__ != "__main__":
     error('Error. Do not import this script, but run it explicitly.')
     exit()
 
-# Usage message.
+# usage message
 usage_message = """List of potential commands that can be executed:
                      adobe build-extension sdk android debug
                      adobe build-extension sdk android release
@@ -33,14 +34,14 @@ usage_message = """List of potential commands that can be executed:
 
 args_count = len(sys.argv)
 
-# Too few arguments.
+# too few arguments
 if args_count < 3 or args_count > 5:
     error('Error. Wrong number of arguments.')
     debug(usage_message)
     exit()
 
-# At this point, valid number of arguments has been passed to the script.
-# Let's check how many of them are there (can be either 4 or 5).
+# at this point, valid number of arguments has been passed to the script
+# let's check how many of them are there (can be either 4 or 5)
 
 build_object = sys.argv[1].lower()
 app_type = sys.argv[2].lower()
@@ -49,7 +50,7 @@ if args_count > 3:
 if args_count > 4:
     build_mode = sys.argv[4].lower()
 
-# Check argument values.
+# check argument values
 if build_object != 'build-extension' and build_object != 'build-ane' and build_object != 'run-app':
     error('Error. Invalid parameter [build_object] passed: {0}'.format(build_object))
     debug(usage_message)
