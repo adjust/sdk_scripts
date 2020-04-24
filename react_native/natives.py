@@ -23,6 +23,14 @@ def build_native_test_library(platform, build_mode='debug'):
         build_native_test_library_ios()
 
 # ------------------------------------------------------------------
+# build native OAID plugin for given platform [android only!]
+# 'release' mode used by default if none specified
+# ------------------------------------------------------------------
+def build_native_plugin_oaid(platform, build_mode='release'):
+    if platform == 'android':
+        build_native_plugin_oaid_android(build_mode)
+
+# ------------------------------------------------------------------
 # build native Android SDK
 # ------------------------------------------------------------------
 def build_native_sdk_android(build_mode='release'):
@@ -89,6 +97,40 @@ def build_native_test_library_android(build_mode='debug'):
     else:
         copy_files('test-library-debug.jar', dir_jar_in, dir_jar_out)
         rename_file('test-library-debug.jar', 'adjust-test.jar', dir_jar_out)
+
+# ------------------------------------------------------------------
+# build native Android OAID plugin
+# ------------------------------------------------------------------
+def build_native_plugin_oaid_android(build_mode='release'):
+    dir_ext     = '{0}/ext/android'.format(dir_root)
+    dir_sdk     = '{0}/ext/android/sdk'.format(dir_root)
+    dir_build   = '{0}/Adjust'.format(dir_sdk)
+    dir_jar_out = '{0}/plugins/oaid/android/libs'.format(dir_root)
+    dir_jar_in  = '{0}/sdk-plugin-oaid/build/libs'.format(dir_build)
+
+    os.chdir(dir_build)
+
+    # ------------------------------------------------------------------
+    # build the JAR
+    # ------------------------------------------------------------------
+    if build_mode == 'release':
+        debug_green('Building native Android OAID plugin in release mode ...')
+        execute_command(['./gradlew', 'clean', 'sdk-plugin-oaid:adjustOaidAndroidJar'])
+    else:
+        debug_green('Building native Android OAID plugin in debug mode ...')
+        execute_command(['./gradlew', 'clean', 'sdk-plugin-oaid:adjustOaidAndroidJar'])
+
+    # ------------------------------------------------------------------
+    # move the built JAR to destination folder
+    # ------------------------------------------------------------------
+    debug_green('Moving native Android OAID plugin JAR from {0} to {1} dir ...'.format(dir_jar_in, dir_jar_out))
+    clear_dir(dir_jar_out)
+    if build_mode == 'release':
+        copy_files('sdk-plugin-oaid.jar', dir_jar_in, dir_jar_out)
+        rename_file('sdk-plugin-oaid.jar', 'adjust-android-oaid.jar', dir_jar_out)
+    else:
+        copy_files('sdk-plugin-oaid.jar', dir_jar_in, dir_jar_out)
+        rename_file('sdk-plugin-oaid.jar', 'adjust-android-oaid.jar', dir_jar_out)
 
 # ------------------------------------------------------------------
 # build native iOS SDK

@@ -6,7 +6,8 @@ dir_root = get_root_dir()
 def build_and_run_example_app_android():
     dir_app                 = '{0}/example'.format(dir_root)
     dir_temp                = '{0}/temp'.format(dir_root)
-    dir_plugin_node_modules = '{0}/node_modules/react-native-adjust'.format(dir_app)
+    dir_node_modules_sdk    = '{0}/node_modules/react-native-adjust'.format(dir_app)
+    dir_node_modules_oaid   = '{0}/node_modules/react-native-adjust-oaid'.format(dir_app)
 
     # ------------------------------------------------------------------
     # uninstalling example app from device/emulator
@@ -17,11 +18,14 @@ def build_and_run_example_app_android():
     # ------------------------------------------------------------------
     # removing and unlinking react-native-adjust from example app
     # ------------------------------------------------------------------
-    debug_green('Removing and unlinking react-native-adjust from example app ...')
     change_dir(dir_app)
+    debug_green('Removing and unlinking react-native-adjust and react-native-adjust-oaid from example app ...')
     execute_command(['react-native', 'unlink', 'react-native-adjust'])
     execute_command(['yarn', 'remove', 'react-native-adjust'])
-    remove_dir_if_exists(dir_plugin_node_modules)
+    remove_dir_if_exists(dir_node_modules_sdk)
+    execute_command(['react-native', 'unlink', 'react-native-adjust-oaid'])
+    execute_command(['yarn', 'remove', 'react-native-adjust-oaid'])
+    remove_dir_if_exists(dir_node_modules_oaid)
 
     # ------------------------------------------------------------------
     # installing node dependencies
@@ -44,9 +48,11 @@ def build_and_run_example_app_android():
     # ------------------------------------------------------------------
     # adding react-native-adjust to example app
     # ------------------------------------------------------------------
-    debug_green('Adding react-native-adjust to example app ...')
     change_dir(dir_app)
+    debug_green('Adding react-native-adjust to example app ...')
     execute_command(['yarn', 'add', '../temp'])
+    debug_green('Adding react-native-adjust-oaid to example app ...')
+    execute_command(['yarn', 'add', '../plugins/oaid'])
 
     # TODO: check if this is needed, seems it's not
     #       error React Native CLI uses autolinking for native dependencies,
@@ -72,16 +78,16 @@ def build_and_run_example_app_android():
 def build_and_run_example_app_ios():
     dir_app                 = '{0}/example'.format(dir_root)
     dir_temp                = '{0}/temp'.format(dir_root)
-    dir_plugin_node_modules = '{0}/node_modules/react-native-adjust'.format(dir_app)
+    dir_node_modules_sdk    = '{0}/node_modules/react-native-adjust'.format(dir_app)
 
     # ------------------------------------------------------------------
     # removing and unlinking react-native-adjust from example app
     # ------------------------------------------------------------------
-    debug_green('Removing and unlinking react-native-adjust from example app ...')
     change_dir(dir_app)
+    debug_green('Removing and unlinking react-native-adjust from example app ...')
     execute_command(['react-native', 'unlink', 'react-native-adjust'])
     execute_command(['yarn', 'remove', 'react-native-adjust'])
-    remove_dir_if_exists(dir_plugin_node_modules)
+    remove_dir_if_exists(dir_node_modules_sdk)
 
     # ------------------------------------------------------------------
     # installing node dependencies
@@ -104,8 +110,8 @@ def build_and_run_example_app_ios():
     # ------------------------------------------------------------------
     # adding react-native-adjust to example app
     # ------------------------------------------------------------------
-    debug_green('Adding react-native-adjust to example app ...')
     change_dir(dir_app)
+    debug_green('Adding react-native-adjust to example app ...')
     execute_command(['yarn', 'add', '../temp'])
 
     # TODO: check if this is needed, seems it's not
@@ -135,10 +141,11 @@ def build_and_run_example_app_ios():
     debug_green('Run example app from Xcode. Project location: {0}/ios ...'.format(dir_app))
 
 def build_and_run_test_app_android():
-    dir_app                         = '{0}/test/app'.format(dir_root)
-    dir_temp                        = '{0}/temp'.format(dir_root)
-    dir_plugin_node_modules         = '{0}/node_modules/react-native-adjust'.format(dir_app)
-    dir_plugin_node_modules_test    = '{0}/node_modules/react-native-adjust-test'.format(dir_app)
+    dir_app                 = '{0}/test/app'.format(dir_root)
+    dir_temp                = '{0}/temp'.format(dir_root)
+    dir_node_modules_sdk    = '{0}/node_modules/react-native-adjust'.format(dir_app)
+    dir_node_modules_oaid   = '{0}/node_modules/react-native-adjust-oaid'.format(dir_app)
+    dir_node_modules_test   = '{0}/node_modules/react-native-adjust-test'.format(dir_app)
 
     # ------------------------------------------------------------------
     # uninstalling test app from device/emulator
@@ -149,14 +156,17 @@ def build_and_run_test_app_android():
     # ------------------------------------------------------------------
     # removing and unlinking react-native-adjust and react-native-adjust-test from test app
     # ------------------------------------------------------------------
-    debug_green('Removing and unlinking react-native-adjust and react-native-adjust-test from test app ...')
     change_dir(dir_app)
+    debug_green('Removing and unlinking react-native-adjust, react-native-adjust-oaid and react-native-adjust-test from test app ...')
     execute_command(['react-native', 'unlink', 'react-native-adjust'])
+    execute_command(['react-native', 'unlink', 'react-native-adjust-oaid'])
     execute_command(['react-native', 'unlink', 'react-native-adjust-test'])
     execute_command(['yarn', 'remove', 'react-native-adjust'])
+    execute_command(['yarn', 'remove', 'react-native-adjust-oaid'])
     execute_command(['yarn', 'remove', 'react-native-adjust-test'])
-    remove_dir_if_exists(dir_plugin_node_modules)
-    remove_dir_if_exists(dir_plugin_node_modules_test)
+    remove_dir_if_exists(dir_node_modules_sdk)
+    remove_dir_if_exists(dir_node_modules_oaid)
+    remove_dir_if_exists(dir_node_modules_test)
 
     # ------------------------------------------------------------------
     # installing node dependencies
@@ -179,8 +189,8 @@ def build_and_run_test_app_android():
     # ------------------------------------------------------------------
     # adding react-native-adjust and react-native-adjust-test to test app
     # ------------------------------------------------------------------
-    debug_green('Adding react-native-adjust and react-native-adjust-test to test app ...')
     change_dir(dir_app)
+    debug_green('Adding react-native-adjust and react-native-adjust-test to test app ...')
     execute_command(['yarn', 'add', '../../temp'])
     execute_command(['yarn', 'add', '../lib'])
 
@@ -206,22 +216,22 @@ def build_and_run_test_app_android():
     execute_command(['react-native', 'run-android'])
 
 def build_and_run_test_app_ios():
-    dir_app                         = '{0}/test/app'.format(dir_root)
-    dir_temp                        = '{0}/temp'.format(dir_root)
-    dir_plugin_node_modules         = '{0}/node_modules/react-native-adjust'.format(dir_app)
-    dir_plugin_node_modules_test    = '{0}/node_modules/react-native-adjust-test'.format(dir_app)
+    dir_app                 = '{0}/test/app'.format(dir_root)
+    dir_temp                = '{0}/temp'.format(dir_root)
+    dir_node_modules_sdk    = '{0}/node_modules/react-native-adjust'.format(dir_app)
+    dir_node_modules_test   = '{0}/node_modules/react-native-adjust-test'.format(dir_app)
 
     # ------------------------------------------------------------------
     # removing and unlinking react-native-adjust and react-native-adjust-test from test app
     # ------------------------------------------------------------------
-    debug_green('Removing and unlinking react-native-adjust and react-native-adjust-test from test app ...')
     change_dir(dir_app)
+    debug_green('Removing and unlinking react-native-adjust and react-native-adjust-test from test app ...')
     execute_command(['react-native', 'unlink', 'react-native-adjust'])
     execute_command(['react-native', 'unlink', 'react-native-adjust-test'])
     execute_command(['yarn', 'remove', 'react-native-adjust'])
     execute_command(['yarn', 'remove', 'react-native-adjust-test'])
-    remove_dir_if_exists(dir_plugin_node_modules)
-    remove_dir_if_exists(dir_plugin_node_modules_test)
+    remove_dir_if_exists(dir_node_modules_sdk)
+    remove_dir_if_exists(dir_node_modules_test)
 
     # ------------------------------------------------------------------
     # installing node dependencies
@@ -244,8 +254,8 @@ def build_and_run_test_app_ios():
     # ------------------------------------------------------------------
     # adding react-native-adjust and react-native-adjust-test to test app
     # ------------------------------------------------------------------
-    debug_green('Adding react-native-adjust and react-native-adjust-test to test app ...')
     change_dir(dir_app)
+    debug_green('Adding react-native-adjust and react-native-adjust-test to test app ...')
     execute_command(['yarn', 'add', '../../temp'])
     execute_command(['yarn', 'add', '../lib'])
 
