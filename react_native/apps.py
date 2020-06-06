@@ -16,30 +16,22 @@ def build_and_run_example_app_android():
     execute_command(['adb', 'uninstall', 'com.adjust.examples'])
 
     # ------------------------------------------------------------------
-    # removing and unlinking react-native-adjust from example app
+    # removing react-native-adjust from example app
     # ------------------------------------------------------------------
     change_dir(dir_app)
-    debug_green('Removing and unlinking react-native-adjust and react-native-adjust-oaid from example app ...')
-    execute_command(['react-native', 'unlink', 'react-native-adjust'])
+    debug_green('Removing react-native-adjust and react-native-adjust-oaid from example app ...')
     execute_command(['yarn', 'remove', 'react-native-adjust'])
     remove_dir_if_exists(dir_node_modules_sdk)
-    execute_command(['react-native', 'unlink', 'react-native-adjust-oaid'])
     execute_command(['yarn', 'remove', 'react-native-adjust-oaid'])
     remove_dir_if_exists(dir_node_modules_oaid)
 
     # ------------------------------------------------------------------
-    # installing node dependencies
+    # installing dependencies
     # ------------------------------------------------------------------
-    debug_green('Check for dependencies updates [npx npm-check-updates -u] ...')
-    execute_command(['npx', 'npm-check-updates', '-u'])
-    debug_green('Installing node dependencies [npm install] ...')
-    execute_command(['npm', 'install'])
-
-    # ------------------------------------------------------------------
-    # fixing node dependencies
-    # ------------------------------------------------------------------
-    debug_green('Fixing node dependencies [npm audit fix --force] ...')
-    execute_command(['npm', 'audit', 'fix', '--force'])
+    debug_green('Check for dependencies updates [yarn upgrade] ...')
+    execute_command(['yarn', 'upgrade'])
+    debug_green('Installing dependencies [yarn install] ...')
+    execute_command(['yarn', 'install'])
 
     # ------------------------------------------------------------------
     # copying react-native-adjust content to temp directory
@@ -83,27 +75,20 @@ def build_and_run_example_app_ios():
     dir_node_modules_sdk    = '{0}/node_modules/react-native-adjust'.format(dir_app)
 
     # ------------------------------------------------------------------
-    # removing and unlinking react-native-adjust from example app
+    # removing react-native-adjust from example app
     # ------------------------------------------------------------------
     change_dir(dir_app)
-    debug_green('Removing and unlinking react-native-adjust from example app ...')
-    execute_command(['react-native', 'unlink', 'react-native-adjust'])
+    debug_green('Removing react-native-adjust from example app ...')
     execute_command(['yarn', 'remove', 'react-native-adjust'])
     remove_dir_if_exists(dir_node_modules_sdk)
 
     # ------------------------------------------------------------------
-    # installing node dependencies
+    # installing dependencies
     # ------------------------------------------------------------------
-    debug_green('Check for dependencies updates [npx npm-check-updates -u] ...')
-    execute_command(['npx', 'npm-check-updates', '-u'])
-    debug_green('Installing node dependencies [npm install] ...')
-    execute_command(['npm', 'install'])
-
-    # ------------------------------------------------------------------
-    # fixing node dependencies
-    # ------------------------------------------------------------------
-    debug_green('Fixing node dependencies [npm audit fix --force] ...')
-    execute_command(['npm', 'audit', 'fix', '--force'])
+    debug_green('Check for dependencies updates [yarn upgrade] ...')
+    execute_command(['yarn', 'upgrade'])
+    debug_green('Installing dependencies [yarn install] ...')
+    execute_command(['yarn', 'install'])
 
     # ------------------------------------------------------------------
     # copying react-native-adjust content to temp directory
@@ -158,13 +143,10 @@ def build_and_run_test_app_android():
     execute_command(['adb', 'uninstall', 'com.adjust.test.app'])
 
     # ------------------------------------------------------------------
-    # removing and unlinking react-native-adjust and react-native-adjust-test from test app
+    # removing react-native-adjust and react-native-adjust-test from test app
     # ------------------------------------------------------------------
     change_dir(dir_app)
-    debug_green('Removing and unlinking react-native-adjust, react-native-adjust-oaid and react-native-adjust-test from test app ...')
-    execute_command(['react-native', 'unlink', 'react-native-adjust'])
-    execute_command(['react-native', 'unlink', 'react-native-adjust-oaid'])
-    execute_command(['react-native', 'unlink', 'react-native-adjust-test'])
+    debug_green('Removing react-native-adjust, react-native-adjust-oaid and react-native-adjust-test from test app ...')
     execute_command(['yarn', 'remove', 'react-native-adjust'])
     execute_command(['yarn', 'remove', 'react-native-adjust-oaid'])
     execute_command(['yarn', 'remove', 'react-native-adjust-test'])
@@ -173,18 +155,12 @@ def build_and_run_test_app_android():
     remove_dir_if_exists(dir_node_modules_test)
 
     # ------------------------------------------------------------------
-    # installing node dependencies
+    # installing dependencies
     # ------------------------------------------------------------------
-    debug_green('Check for dependencies updates [npx npm-check-updates -u] ...')
-    execute_command(['npx', 'npm-check-updates', '-u'])
-    debug_green('Installing node dependencies [npm install] ...')
-    execute_command(['npm', 'install'])
-
-    # ------------------------------------------------------------------
-    # fixing node dependencies
-    # ------------------------------------------------------------------
-    debug_green('Fixing node dependencies [npm audit fix --force] ...')
-    execute_command(['npm', 'audit', 'fix', '--force'])
+    debug_green('Check for dependencies updates [yarn upgrade] ...')
+    execute_command(['yarn', 'upgrade'])
+    debug_green('Installing dependencies [yarn install] ...')
+    execute_command(['yarn', 'install'])
 
     # ------------------------------------------------------------------
     # copying react-native-adjust content to temp directory
@@ -196,8 +172,9 @@ def build_and_run_test_app_android():
     # adding react-native-adjust and react-native-adjust-test to test app
     # ------------------------------------------------------------------
     change_dir(dir_app)
-    debug_green('Adding react-native-adjust and react-native-adjust-test to test app ...')
+    debug_green('Adding react-native-adjust, react-native-adjust-oaid and react-native-adjust-test to test app ...')
     execute_command(['yarn', 'add', '../../temp'])
+    execute_command(['yarn', 'add', '../../plugins/oaid'])
     execute_command(['yarn', 'add', '../lib'])
 
     # TODO: check if this is needed, seems it's not
@@ -228,30 +205,22 @@ def build_and_run_test_app_ios():
     dir_node_modules_test   = '{0}/node_modules/react-native-adjust-test'.format(dir_app)
 
     # ------------------------------------------------------------------
-    # removing and unlinking react-native-adjust and react-native-adjust-test from test app
+    # removing react-native-adjust and react-native-adjust-test from test app
     # ------------------------------------------------------------------
     change_dir(dir_app)
-    debug_green('Removing and unlinking react-native-adjust and react-native-adjust-test from test app ...')
-    execute_command(['react-native', 'unlink', 'react-native-adjust'])
-    execute_command(['react-native', 'unlink', 'react-native-adjust-test'])
+    debug_green('Removing react-native-adjust and react-native-adjust-test from test app ...')
     execute_command(['yarn', 'remove', 'react-native-adjust'])
     execute_command(['yarn', 'remove', 'react-native-adjust-test'])
     remove_dir_if_exists(dir_node_modules_sdk)
     remove_dir_if_exists(dir_node_modules_test)
 
     # ------------------------------------------------------------------
-    # installing node dependencies
+    # installing dependencies
     # ------------------------------------------------------------------
-    debug_green('Check for dependencies updates [npx npm-check-updates -u] ...')
-    execute_command(['npx', 'npm-check-updates', '-u'])
-    debug_green('Installing node dependencies [npm install] ...')
-    execute_command(['npm', 'install'])
-
-    # ------------------------------------------------------------------
-    # fixing node dependencies
-    # ------------------------------------------------------------------
-    debug_green('Fixing node dependencies [npm audit fix --force] ...')
-    execute_command(['npm', 'audit', 'fix', '--force'])
+    debug_green('Check for dependencies updates [yarn upgrade] ...')
+    execute_command(['yarn', 'upgrade'])
+    debug_green('Installing dependencies [yarn install] ...')
+    execute_command(['yarn', 'install'])
 
     # ------------------------------------------------------------------
     # copying react-native-adjust content to temp directory
