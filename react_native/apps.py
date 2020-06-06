@@ -30,6 +30,8 @@ def build_and_run_example_app_android():
     # ------------------------------------------------------------------
     # installing node dependencies
     # ------------------------------------------------------------------
+    debug_green('Check for dependencies updates [npx npm-check-updates -u] ...')
+    execute_command(['npx', 'npm-check-updates', '-u'])
     debug_green('Installing node dependencies [npm install] ...')
     execute_command(['npm', 'install'])
 
@@ -92,6 +94,8 @@ def build_and_run_example_app_ios():
     # ------------------------------------------------------------------
     # installing node dependencies
     # ------------------------------------------------------------------
+    debug_green('Check for dependencies updates [npx npm-check-updates -u] ...')
+    execute_command(['npx', 'npm-check-updates', '-u'])
     debug_green('Installing node dependencies [npm install] ...')
     execute_command(['npm', 'install'])
 
@@ -171,6 +175,8 @@ def build_and_run_test_app_android():
     # ------------------------------------------------------------------
     # installing node dependencies
     # ------------------------------------------------------------------
+    debug_green('Check for dependencies updates [npx npm-check-updates -u] ...')
+    execute_command(['npx', 'npm-check-updates', '-u'])
     debug_green('Installing node dependencies [npm install] ...')
     execute_command(['npm', 'install'])
 
@@ -236,6 +242,8 @@ def build_and_run_test_app_ios():
     # ------------------------------------------------------------------
     # installing node dependencies
     # ------------------------------------------------------------------
+    debug_green('Check for dependencies updates [npx npm-check-updates -u] ...')
+    execute_command(['npx', 'npm-check-updates', '-u'])
     debug_green('Installing node dependencies [npm install] ...')
     execute_command(['npm', 'install'])
 
