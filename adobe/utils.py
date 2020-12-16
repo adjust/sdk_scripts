@@ -193,9 +193,9 @@ def adobe_air_compc_sdk(root_dir, build_dir):
     dir_src         = '{0}/default/src'.format(root_dir)
     dir_output      = '{0}/default'.format(build_dir)
 
-    execute_command([compc, '-source-path', dir_src, '-swf-version', '27', '-external-library-path', 
+    execute_command([compc, '-source-path', dir_src, '-external-library-path', 
         file_swc, '-include-classes', 'com.adjust.sdk.Adjust', 'com.adjust.sdk.LogLevel', 'com.adjust.sdk.Environment',
-        'com.adjust.sdk.AdjustConfig', 'com.adjust.sdk.AdjustAttribution', 'com.adjust.sdk.AdjustEventSuccess',
+        'com.adjust.sdk.UrlStrategy', 'com.adjust.sdk.AdjustConfig', 'com.adjust.sdk.AdjustAttribution', 'com.adjust.sdk.AdjustEventSuccess',
         'com.adjust.sdk.AdjustEventFailure', 'com.adjust.sdk.AdjustEvent', 'com.adjust.sdk.AdjustSessionSuccess',
         'com.adjust.sdk.AdjustSessionFailure', 'com.adjust.sdk.AdjustTestOptions', '-directory=true', '-output', dir_output])
 
@@ -207,7 +207,7 @@ def adobe_air_compc_test(root_dir, build_dir):
     external_lib_path = '{0}/frameworks/libs/air/airglobal.swc'.format(air_sdk_path)
     output_dir        = '{0}/default'.format(build_dir)
 
-    execute_command([compc, '-source-path', default_src_dir, '-swf-version', '27', '-external-library-path',
+    execute_command([compc, '-source-path', default_src_dir, '-external-library-path',
         external_lib_path, '-include-classes', 'com.adjust.test.AdjustTest', '-directory=true', '-output', output_dir])
 
 # Run 'compc' command to build .swc file for SDK.
@@ -217,9 +217,9 @@ def adobe_air_compc_swc_sdk(root_dir, build_dir):
     src_dir           = '{0}/src'.format(root_dir)
     external_lib_path = '{0}/frameworks/libs/air/airglobal.swc'.format(air_sdk_path)
 
-    execute_command([compc, '-source-path', src_dir, '-swf-version', '27', '-external-library-path', 
+    execute_command([compc, '-source-path', src_dir, '-external-library-path', 
         external_lib_path, '-include-classes', 'com.adjust.sdk.Adjust', 'com.adjust.sdk.LogLevel', 'com.adjust.sdk.Environment',
-        'com.adjust.sdk.AdjustConfig', 'com.adjust.sdk.AdjustAttribution', 'com.adjust.sdk.AdjustEventSuccess',
+        'com.adjust.sdk.UrlStrategy', 'com.adjust.sdk.AdjustConfig', 'com.adjust.sdk.AdjustAttribution', 'com.adjust.sdk.AdjustEventSuccess',
         'com.adjust.sdk.AdjustEventFailure', 'com.adjust.sdk.AdjustEvent', 'com.adjust.sdk.AdjustSessionSuccess',
         'com.adjust.sdk.AdjustSessionFailure', 'com.adjust.sdk.AdjustTestOptions', '-output', '{0}/Adjust.swc'.format(build_dir)])
 
@@ -230,7 +230,7 @@ def adobe_air_compc_swc_test(root_dir, build_dir):
     src_dir           = '{0}/src'.format(root_dir)
     external_lib_path = '{0}/frameworks/libs/air/airglobal.swc'.format(air_sdk_path)
 
-    execute_command([compc, '-source-path', src_dir, '-swf-version', '27', '-external-library-path',
+    execute_command([compc, '-source-path', src_dir, '-external-library-path',
         external_lib_path, '-include-classes', 'com.adjust.test.AdjustTest', '-output', '{0}/AdjustTest.swc'.format(build_dir)])
 
 # Run 'adt' command for SDK.
