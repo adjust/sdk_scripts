@@ -31,6 +31,8 @@ usage_message = """List of potential commands that can be executed:
                      react-native build-native test-library android release
                      react-native build-native test-library ios debug
                      react-native build-native test-library ios release
+                     react-native build-native test-options android debug
+                     react-native build-native test-options android release
                      react-native build-native plugin-oaid android debug
                      react-native build-native plugin-oaid android release
                      react-native run example-app android
@@ -67,7 +69,7 @@ if action_type != 'build-native' and action_type != 'run':
     error('Error. Invalid parameter [action_type] passed: {0}'.format(action_type))
     debug(usage_message)
     exit()
-if target_type != 'sdk' and target_type != 'test-library' and target_type != 'example-app' and target_type != 'test-app' and target_type != 'plugin-oaid':
+if target_type != 'sdk' and target_type != 'test-library' and target_type != 'test-options' and target_type != 'example-app' and target_type != 'test-app' and target_type != 'plugin-oaid':
     error('Error. Invalid parameter [target_type] passed: {0}'.format(target_type))
     debug(usage_message)
     exit()
@@ -89,6 +91,8 @@ try:
             natives.build_native_sdk(platform, build_mode)
         elif target_type == 'test-library':
             natives.build_native_test_library(platform, build_mode)
+        elif target_type == 'test-options':
+            natives.build_native_test_options(platform, build_mode)
         elif target_type == 'plugin-oaid':
             natives.build_native_plugin_oaid(platform, build_mode)
     # ------------------------------------------------------------------
@@ -105,6 +109,7 @@ try:
         elif target_type == 'test-app':
             natives.build_native_sdk(platform)
             natives.build_native_test_library(platform)
+            natives.build_native_test_options(platform)
             if platform == 'android':
                 natives.build_native_plugin_oaid(platform)
                 apps.build_and_run_test_app_android()
