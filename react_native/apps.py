@@ -140,7 +140,7 @@ def build_and_run_test_app_android():
     # uninstalling test app from device/emulator
     # ------------------------------------------------------------------
     debug_green('Uninstalling test app from device/emulator ...')
-    execute_command(['adb', 'uninstall', 'com.adjust.test.app'])
+    execute_command(['adb', 'uninstall', 'com.adjust.examples'])
 
     # ------------------------------------------------------------------
     # removing react-native-adjust and react-native-adjust-test from test app
