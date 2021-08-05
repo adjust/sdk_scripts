@@ -1,14 +1,15 @@
-from utils import *
+from adobe.utils import *
 
 dir_root = get_root_dir()
 version = get_version_string()
 
+
 # Build Adobe AIR SDK ANE.
 def build_ane_sdk():
-    dir_build       = '{0}/build'.format(dir_root)
-    dir_src         = '{0}/src'.format(dir_root)
+    dir_build = '{0}/build'.format(dir_root)
+    dir_src = '{0}/src'.format(dir_root)
     dir_ext_android = '{0}/ext/android'.format(dir_root)
-    dir_ext_ios     = '{0}/ext/ios'.format(dir_root)
+    dir_ext_ios = '{0}/ext/ios'.format(dir_root)
 
     # Check for presence of submodule directories.
     debug_green('Checking for presence of submodules directories ...')
@@ -64,13 +65,14 @@ def build_ane_sdk():
     change_dir(dir_build)
     adobe_air_adt_sdk(version)
 
+
 # Build Adobe AIR SDK test library ANE.
 def build_ane_test():
-    dir_plugin          = '{0}/test/plugin'.format(dir_root)
-    dir_plugin_android  = '{0}/android'.format(dir_plugin)
-    dir_plugin_ios      = '{0}/ios'.format(dir_plugin)
-    dir_plugin_src      = '{0}/src'.format(dir_plugin)
-    dir_plugin_build    = '{0}/build'.format(dir_plugin)
+    dir_plugin = '{0}/test/plugin'.format(dir_root)
+    dir_plugin_android = '{0}/android'.format(dir_plugin)
+    dir_plugin_ios = '{0}/ios'.format(dir_plugin)
+    dir_plugin_src = '{0}/src'.format(dir_plugin)
+    dir_plugin_build = '{0}/build'.format(dir_plugin)
 
     # Go to root directory.
     debug_green('Moving to root directory ...')
@@ -96,22 +98,38 @@ def build_ane_test():
     recreate_dir('{0}/iOS-x86'.format(dir_plugin_build))
 
     # Copy generated files into build directories.
-    copy_file('{0}/adjust-android-test.jar'.format(dir_plugin_android), '{0}/Android/adjust-android-test.jar'.format(dir_plugin_build))
-    copy_file('{0}/src/AdjustTestExtension/extension/libs/gson-2.8.6.jar'.format(dir_plugin_android), '{0}/Android/gson-2.8.6.jar'.format(dir_plugin_build))
-    copy_file('{0}/src/AdjustTestExtension/extension/libs/Java-WebSocket-1.4.0.jar'.format(dir_plugin_android), '{0}/Android/Java-WebSocket-1.4.0.jar'.format(dir_plugin_build))
-    copy_file('{0}/src/AdjustTestExtension/extension/libs/slf4j-api-1.7.30.jar'.format(dir_plugin_android), '{0}/Android/slf4j-api-1.7.30.jar'.format(dir_plugin_build))
-    copy_file('{0}/adjust-android-test.jar'.format(dir_plugin_android), '{0}/Android64/adjust-android-test.jar'.format(dir_plugin_build))
-    copy_file('{0}/src/AdjustTestExtension/extension/libs/gson-2.8.6.jar'.format(dir_plugin_android), '{0}/Android64/gson-2.8.6.jar'.format(dir_plugin_build))
-    copy_file('{0}/src/AdjustTestExtension/extension/libs/Java-WebSocket-1.4.0.jar'.format(dir_plugin_android), '{0}/Android64/Java-WebSocket-1.4.0.jar'.format(dir_plugin_build))
-    copy_file('{0}/src/AdjustTestExtension/extension/libs/slf4j-api-1.7.30.jar'.format(dir_plugin_android), '{0}/Android64/slf4j-api-1.7.30.jar'.format(dir_plugin_build))
-    copy_file('{0}/libAdjustTestExtension.a'.format(dir_plugin_ios), '{0}/iOS/libAdjustTestExtension.a'.format(dir_plugin_build))
-    copy_dir_content('{0}/AdjustTestLibrary.framework'.format(dir_plugin_ios), '{0}/iOS/AdjustTestLibrary.framework'.format(dir_plugin_build))
-    copy_file('{0}/adjust-android-test.jar'.format(dir_plugin_android), '{0}/Android-x86/adjust-android-test.jar'.format(dir_plugin_build))
-    copy_file('{0}/src/AdjustTestExtension/extension/libs/gson-2.8.6.jar'.format(dir_plugin_android), '{0}/Android-x86/gson-2.8.6.jar'.format(dir_plugin_build))
-    copy_file('{0}/src/AdjustTestExtension/extension/libs/Java-WebSocket-1.4.0.jar'.format(dir_plugin_android), '{0}/Android-x86/Java-WebSocket-1.4.0.jar'.format(dir_plugin_build))
-    copy_file('{0}/src/AdjustTestExtension/extension/libs/slf4j-api-1.7.30.jar'.format(dir_plugin_android), '{0}/Android-x86/slf4j-api-1.7.30.jar'.format(dir_plugin_build))
-    copy_file('{0}/libAdjustTestExtension.a'.format(dir_plugin_ios), '{0}/iOS-x86/libAdjustTestExtension.a'.format(dir_plugin_build))
-    copy_dir_content('{0}/AdjustTestLibrary.framework'.format(dir_plugin_ios), '{0}/iOS-x86/AdjustTestLibrary.framework'.format(dir_plugin_build))
+    copy_file('{0}/adjust-android-test.jar'.format(dir_plugin_android),
+              '{0}/Android/adjust-android-test.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/gson-2.8.6.jar'.format(dir_plugin_android),
+              '{0}/Android/gson-2.8.6.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/Java-WebSocket-1.4.0.jar'.format(dir_plugin_android),
+              '{0}/Android/Java-WebSocket-1.4.0.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/slf4j-api-1.7.30.jar'.format(dir_plugin_android),
+              '{0}/Android/slf4j-api-1.7.30.jar'.format(dir_plugin_build))
+    copy_file('{0}/adjust-android-test.jar'.format(dir_plugin_android),
+              '{0}/Android64/adjust-android-test.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/gson-2.8.6.jar'.format(dir_plugin_android),
+              '{0}/Android64/gson-2.8.6.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/Java-WebSocket-1.4.0.jar'.format(dir_plugin_android),
+              '{0}/Android64/Java-WebSocket-1.4.0.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/slf4j-api-1.7.30.jar'.format(dir_plugin_android),
+              '{0}/Android64/slf4j-api-1.7.30.jar'.format(dir_plugin_build))
+    copy_file('{0}/libAdjustTestExtension.a'.format(dir_plugin_ios),
+              '{0}/iOS/libAdjustTestExtension.a'.format(dir_plugin_build))
+    copy_dir_content('{0}/AdjustTestLibrary.framework'.format(dir_plugin_ios),
+                     '{0}/iOS/AdjustTestLibrary.framework'.format(dir_plugin_build))
+    copy_file('{0}/adjust-android-test.jar'.format(dir_plugin_android),
+              '{0}/Android-x86/adjust-android-test.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/gson-2.8.6.jar'.format(dir_plugin_android),
+              '{0}/Android-x86/gson-2.8.6.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/Java-WebSocket-1.4.0.jar'.format(dir_plugin_android),
+              '{0}/Android-x86/Java-WebSocket-1.4.0.jar'.format(dir_plugin_build))
+    copy_file('{0}/src/AdjustTestExtension/extension/libs/slf4j-api-1.7.30.jar'.format(dir_plugin_android),
+              '{0}/Android-x86/slf4j-api-1.7.30.jar'.format(dir_plugin_build))
+    copy_file('{0}/libAdjustTestExtension.a'.format(dir_plugin_ios),
+              '{0}/iOS-x86/libAdjustTestExtension.a'.format(dir_plugin_build))
+    copy_dir_content('{0}/AdjustTestLibrary.framework'.format(dir_plugin_ios),
+                     '{0}/iOS-x86/AdjustTestLibrary.framework'.format(dir_plugin_build))
 
     # Generate .swc file.
     debug_green('Making SWC file ...')
@@ -124,11 +142,16 @@ def build_ane_test():
     adobe_air_unzip('{0}/iOS'.format(dir_plugin_build), '{0}/AdjustTest.swc'.format(dir_plugin_build))
     adobe_air_unzip('{0}/Android-x86'.format(dir_plugin_build), '{0}/AdjustTest.swc'.format(dir_plugin_build))
     adobe_air_unzip('{0}/iOS-x86'.format(dir_plugin_build), '{0}/AdjustTest.swc'.format(dir_plugin_build))
-    copy_file('{0}/platformoptions_android_test.xml'.format(dir_plugin_src), '{0}/Android/platformoptions_android_test.xml'.format(dir_plugin_build))
-    copy_file('{0}/platformoptions_android_test.xml'.format(dir_plugin_src), '{0}/Android64/platformoptions_android_test.xml'.format(dir_plugin_build))
-    copy_file('{0}/platformoptions_ios_test.xml'.format(dir_plugin_src), '{0}/iOS/platformoptions_ios_test.xml'.format(dir_plugin_build))
-    copy_file('{0}/platformoptions_android_test.xml'.format(dir_plugin_src), '{0}/Android-x86/platformoptions_android_test.xml'.format(dir_plugin_build))
-    copy_file('{0}/platformoptions_ios_test.xml'.format(dir_plugin_src), '{0}/iOS-x86/platformoptions_ios_test.xml'.format(dir_plugin_build))
+    copy_file('{0}/platformoptions_android_test.xml'.format(dir_plugin_src),
+              '{0}/Android/platformoptions_android_test.xml'.format(dir_plugin_build))
+    copy_file('{0}/platformoptions_android_test.xml'.format(dir_plugin_src),
+              '{0}/Android64/platformoptions_android_test.xml'.format(dir_plugin_build))
+    copy_file('{0}/platformoptions_ios_test.xml'.format(dir_plugin_src),
+              '{0}/iOS/platformoptions_ios_test.xml'.format(dir_plugin_build))
+    copy_file('{0}/platformoptions_android_test.xml'.format(dir_plugin_src),
+              '{0}/Android-x86/platformoptions_android_test.xml'.format(dir_plugin_build))
+    copy_file('{0}/platformoptions_ios_test.xml'.format(dir_plugin_src),
+              '{0}/iOS-x86/platformoptions_ios_test.xml'.format(dir_plugin_build))
     copy_file('{0}/extension.xml'.format(dir_plugin_src), '{0}/extension.xml'.format(dir_plugin_build))
     change_dir(dir_plugin_build)
     adobe_air_adt_test(dir_root, dir_plugin_build, version)

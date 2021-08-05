@@ -1,7 +1,8 @@
-from utils import *
+from adobe.utils import *
 
 dir_root = get_root_dir()
 version = get_version_string()
+
 
 def build_and_run_app_example_android():
     dir_app = '{0}/example'.format(dir_root)
@@ -43,6 +44,7 @@ def build_and_run_app_example_android():
     # Start example app.
     debug_green('Example app installed. Starting the example app on the device ...')
     adb_shell_monkey('air.com.adjust.examples')
+
 
 def build_and_run_app_test_android():
     dir_app = '{0}/test/app'.format(dir_root)
@@ -87,11 +89,12 @@ def build_and_run_app_test_android():
     debug_green('Test app installed. Starting the test app on the device ...')
     adb_shell_monkey('air.com.adjust.examples')
 
+
 def build_and_run_app_example_ios():
-    dir_app      = '{0}/example'.format(dir_root)
+    dir_app = '{0}/example'.format(dir_root)
     file_app_xml = '{0}/Main-app.xml'.format(dir_app)
 
-    path_prov_profile  = get_env_variable('DEV_ADOBE_PROVISIONING_PROFILE_PATH')
+    path_prov_profile = get_env_variable('DEV_ADOBE_PROVISIONING_PROFILE_PATH')
     path_keystore_file = get_env_variable('KEYSTORE_FILE_PATH')
 
     # Remove Adjust SDK ANE from example app.
@@ -120,11 +123,12 @@ def build_and_run_app_example_ios():
     debug_green('Packaging IPA file ...')
     adobe_air_package_ipa_file(path_prov_profile, path_keystore_file, file_app_xml)
 
-def build_and_run_app_test_ios():
-    dir_app         = '{0}/test/app'.format(dir_root)
-    file_app_xml    = '{0}/Main-app.xml'.format(dir_app)
 
-    path_prov_profile  = get_env_variable('DEV_ADOBE_PROVISIONING_PROFILE_PATH')
+def build_and_run_app_test_ios():
+    dir_app = '{0}/test/app'.format(dir_root)
+    file_app_xml = '{0}/Main-app.xml'.format(dir_app)
+
+    path_prov_profile = get_env_variable('DEV_ADOBE_PROVISIONING_PROFILE_PATH')
     path_keystore_file = get_env_variable('KEYSTORE_FILE_PATH')
 
     # Remove Adjust SDK and test library ANE from test app.

@@ -1,4 +1,4 @@
-from utils import *
+from react_native.utils import *
 
 dir_root = get_root_dir()
 
