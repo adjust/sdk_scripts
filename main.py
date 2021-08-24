@@ -1,3 +1,4 @@
+import os
 import platform
 
 import click
@@ -5,6 +6,7 @@ import click
 from adobe import anes as adobe_ane
 from adobe import apps as adobe_app
 from adobe import extensions as adobe_extensions
+from adobe.utils import set_log_tag
 from react_native import apps as react_app
 from react_native import natives as react_natives
 
@@ -19,11 +21,26 @@ def main(*args, **kwargs):
 @main.group(help='adobe sub-command')
 def adobe(*args, **kwargs):
     click.secho('Running: Adobe', fg='bright_magenta')
+    set_log_tag('ADOBE-AIR-SDK')
 
 
 @main.group(help='react-native sub-command')
-def react_native(*args, **kwargs):
-    click.secho('Running: React Native', fg='bright_magenta')
+@click.option('--path', help='path to projects root')
+def react_native(path):
+    if path and os.path.exists(path):
+        click.secho(f'Running: React Native on {path}', fg='bright_magenta')
+        os.chdir(path)
+    else:
+        click.secho(f'Error! Path not set or not found!', fg='red')
+
+
+@react_native.command()
+@click.pass_context
+def test(ctx):
+    click.echo('test')
+    path = ctx.parent.params.get('path')
+    os.chdir(path)
+    click.echo(os.path.abspath('.'))
 
 
 @adobe.command()

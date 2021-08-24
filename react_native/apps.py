@@ -1,13 +1,14 @@
-import os, subprocess
+from decorators import only_mac_os
 from react_native.utils import *
 
 dir_root = get_root_dir()
 
+
 def build_and_run_example_app_android():
-    dir_app                 = '{0}/example'.format(dir_root)
-    dir_temp                = '{0}/temp'.format(dir_root)
-    dir_node_modules_sdk    = '{0}/node_modules/react-native-adjust'.format(dir_app)
-    dir_node_modules_oaid   = '{0}/node_modules/react-native-adjust-oaid'.format(dir_app)
+    dir_app = os.path.join(dir_root, 'example')
+    dir_temp = os.path.join(dir_root, 'temp')
+    dir_node_modules_sdk = os.path.join(dir_app, 'node_modules/react-native-adjust')
+    dir_node_modules_oaid = os.path.join(dir_app, 'node_modules/react-native-adjust-oaid')
 
     # ------------------------------------------------------------------
     # uninstalling example app from device/emulator
@@ -69,10 +70,12 @@ def build_and_run_example_app_android():
     debug_green('Building and running example app on device/emulator ...')
     execute_command(['react-native', 'run-android'])
 
+
+@only_mac_os
 def build_and_run_example_app_ios():
-    dir_app                 = '{0}/example'.format(dir_root)
-    dir_temp                = '{0}/temp'.format(dir_root)
-    dir_node_modules_sdk    = '{0}/node_modules/react-native-adjust'.format(dir_app)
+    dir_app = os.path.join(dir_root, 'example')
+    dir_temp = os.path.join(dir_root, 'temp')
+    dir_node_modules_sdk = os.path.join(dir_app, 'node_modules/react-native-adjust')
 
     # ------------------------------------------------------------------
     # removing react-native-adjust from example app
@@ -115,7 +118,7 @@ def build_and_run_example_app_ios():
     # ------------------------------------------------------------------
     # update all the Pods if needed
     # ------------------------------------------------------------------
-    change_dir('{0}/{1}'.format(dir_app, 'ios'))
+    change_dir(os.path.join(dir_app, 'ios'))
     execute_command(['pod', 'update'])
 
     # ------------------------------------------------------------------
@@ -129,12 +132,13 @@ def build_and_run_example_app_ios():
     # ------------------------------------------------------------------
     debug_green('Run example app from Xcode. Project location: {0}/ios ...'.format(dir_app))
 
+
 def build_and_run_test_app_android():
-    dir_app                 = '{0}/test/app'.format(dir_root)
-    dir_temp                = '{0}/temp'.format(dir_root)
-    dir_node_modules_sdk    = '{0}/node_modules/react-native-adjust'.format(dir_app)
-    dir_node_modules_oaid   = '{0}/node_modules/react-native-adjust-oaid'.format(dir_app)
-    dir_node_modules_test   = '{0}/node_modules/react-native-adjust-test'.format(dir_app)
+    dir_app = os.path.join(dir_root, 'test/app')
+    dir_temp = os.path.join(dir_root, 'temp')
+    dir_node_modules_sdk = os.path.join(dir_app, 'node_modules/react-native-adjust')
+    dir_node_modules_oaid = os.path.join(dir_app, 'node_modules/react-native-adjust-oaid')
+    dir_node_modules_test = os.path.join(dir_app, 'node_modules/react-native-adjust-test')
 
     # ------------------------------------------------------------------
     # uninstalling test app from device/emulator
@@ -198,11 +202,13 @@ def build_and_run_test_app_android():
     debug_green('Building and running test app on device/emulator ...')
     execute_command(['react-native', 'run-android'])
 
+
+@only_mac_os
 def build_and_run_test_app_ios():
-    dir_app                 = '{0}/test/app'.format(dir_root)
-    dir_temp                = '{0}/temp'.format(dir_root)
-    dir_node_modules_sdk    = '{0}/node_modules/react-native-adjust'.format(dir_app)
-    dir_node_modules_test   = '{0}/node_modules/react-native-adjust-test'.format(dir_app)
+    dir_app = os.path.join(dir_root, 'test/app')
+    dir_temp = os.path.join(dir_root, 'temp')
+    dir_node_modules_sdk = os.path.join(dir_app, 'node_modules/react-native-adjust')
+    dir_node_modules_test = os.path.join(dir_app, 'node_modules/react-native-adjust-test')
 
     # ------------------------------------------------------------------
     # removing react-native-adjust and react-native-adjust-test from test app
@@ -248,7 +254,7 @@ def build_and_run_test_app_ios():
     # ------------------------------------------------------------------
     # update all the Pods if needed
     # ------------------------------------------------------------------
-    change_dir('{0}/{1}'.format(dir_app, 'ios'))
+    change_dir(os.path.join(dir_app, 'ios'))
     execute_command(['pod', 'update'])
 
     # ------------------------------------------------------------------
@@ -262,14 +268,16 @@ def build_and_run_test_app_ios():
     # ------------------------------------------------------------------
     debug_green('Run test app from Xcode. Project location: {0}/ios ...'.format(dir_app))
 
+
 def copy_content_to_temp_dir():
-    dir_temp    = '{0}/temp'.format(dir_root)
-    dir_ios     = '{0}/ios'.format(dir_root)
-    dir_android = '{0}/android'.format(dir_root)
+    dir_temp = os.path.join(dir_root, 'temp')
+    dir_ios = os.path.join(dir_root, 'ios')
+    dir_android = os.path.join(dir_root, 'android')
 
     recreate_dir(dir_temp)
-    copy_dir_content(dir_android, dir_temp + '/android')
-    copy_dir_content(dir_ios, dir_temp + '/ios')
-    copy_file('{0}/package.json'.format(dir_root), '{0}/package.json'.format(dir_temp))
-    copy_file('{0}/react-native-adjust.podspec'.format(dir_root), '{0}/react-native-adjust.podspec'.format(dir_temp))
-    copy_file('{0}/index.js'.format(dir_root), '{0}/index.js'.format(dir_temp))
+    copy_dir_content(dir_android, os.path.join(dir_temp, 'android'))
+    copy_dir_content(dir_ios, os.path.join(dir_temp, 'ios'))
+    copy_file(os.path.join(dir_root, 'package.json'), os.path.join(dir_temp, 'package.json'))
+    copy_file(os.path.join(dir_root, 'react-native-adjust.podspec'),
+              os.path.join(dir_temp, 'react-native-adjust.podspec'))
+    copy_file(os.path.join(dir_root, 'index.js'), os.path.join(dir_temp, 'index.js'))

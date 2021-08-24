@@ -1,53 +1,59 @@
+from decorators import only_mac_os
 from react_native.utils import *
 
 dir_root = get_root_dir()
+
 
 # ------------------------------------------------------------------
 # build native SDK for given platform and build mode 
 # 'release' mode used by default if none specified
 # ------------------------------------------------------------------
-def build_native_sdk(platform, build_mode='release'):
-    if platform == 'android':
+def build_native_sdk(build_platform, build_mode='release'):
+    if build_platform == 'android':
         build_native_sdk_android(build_mode)
-    elif platform == 'ios':
+    elif build_platform == 'ios':
         build_native_sdk_ios()
+
 
 # ------------------------------------------------------------------
 # build native test library for given platform and build mode
 # 'release' mode used by default if none specified
 # ------------------------------------------------------------------
-def build_native_test_library(platform, build_mode='debug'):
-    if platform == 'android':
+def build_native_test_library(build_platform, build_mode='debug'):
+    if build_platform == 'android':
         build_native_test_library_android(build_mode)
-    elif platform == 'ios':
+    elif build_platform == 'ios':
         build_native_test_library_ios()
+
 
 # ------------------------------------------------------------------
 # build native test options for given platform and build mode
 # 'release' mode used by default if none specified
 # note: right now, only Android supports test options concept
 # ------------------------------------------------------------------
-def build_native_test_options(platform, build_mode='debug'):
-    if platform == 'android':
+def build_native_test_options(build_platform, build_mode='debug'):
+    if build_platform == 'android':
         build_native_test_options_android(build_mode)
+
 
 # ------------------------------------------------------------------
 # build native OAID plugin for given platform [android only!]
 # 'release' mode used by default if none specified
 # ------------------------------------------------------------------
-def build_native_plugin_oaid(platform, build_mode='release'):
-    if platform == 'android':
+def build_native_plugin_oaid(build_platform, build_mode='release'):
+    if build_platform == 'android':
         build_native_plugin_oaid_android(build_mode)
+
 
 # ------------------------------------------------------------------
 # build native Android SDK
 # ------------------------------------------------------------------
 def build_native_sdk_android(build_mode='release'):
-    dir_ext     = '{0}/ext/android'.format(dir_root)
-    dir_sdk     = '{0}/ext/android/sdk'.format(dir_root)
-    dir_build   = '{0}/Adjust'.format(dir_sdk)
-    dir_jar_out = '{0}/android/libs'.format(dir_root)
-    dir_jar_in  = '{0}/sdk-core/build/libs'.format(dir_build)
+    dir_ext = os.path.join(dir_root, 'ext/android')
+    dir_sdk = os.path.join(dir_root, 'ext/android/sdk')
+    dir_build = os.path.join(dir_sdk, 'Adjust')
+    dir_jar_out = os.path.join(dir_root, 'android/libs')
+    dir_jar_in = os.path.join(dir_build, 'sdk-core/build/libs')
 
     os.chdir(dir_build)
 
@@ -73,15 +79,16 @@ def build_native_sdk_android(build_mode='release'):
         copy_files('adjust-sdk-debug.jar', dir_jar_in, dir_jar_out)
         rename_file('adjust-sdk-debug.jar', 'adjust-android.jar', dir_jar_out)
 
+
 # ------------------------------------------------------------------
 # build native Android test library
 # ------------------------------------------------------------------
 def build_native_test_library_android(build_mode='debug'):
-    dir_ext     = '{0}/ext/android'.format(dir_root)
-    dir_sdk     = '{0}/ext/android/sdk'.format(dir_root)
-    dir_build   = '{0}/Adjust'.format(dir_sdk)
-    dir_jar_in  = '{0}/test-library/build/libs'.format(dir_build)
-    dir_jar_out = '{0}/test/lib/android/libs'.format(dir_root)
+    dir_ext = os.path.join(dir_root, 'ext/android')
+    dir_sdk = os.path.join(dir_root, 'ext/android/sdk')
+    dir_build = os.path.join(dir_sdk, 'Adjust')
+    dir_jar_out = os.path.join(dir_root, 'android/libs')
+    dir_jar_in = os.path.join(dir_build, 'sdk-core/build/libs')
 
     os.chdir(dir_build)
 
@@ -107,15 +114,16 @@ def build_native_test_library_android(build_mode='debug'):
         copy_files('test-library-debug.jar', dir_jar_in, dir_jar_out)
         rename_file('test-library-debug.jar', 'adjust-test-library.jar', dir_jar_out)
 
+
 # ------------------------------------------------------------------
 # build native Android test options
 # ------------------------------------------------------------------
 def build_native_test_options_android(build_mode='debug'):
-    dir_ext     = '{0}/ext/android'.format(dir_root)
-    dir_sdk     = '{0}/ext/android/sdk'.format(dir_root)
-    dir_build   = '{0}/Adjust'.format(dir_sdk)
-    dir_jar_in  = '{0}/test-options/build/intermediates/aar_main_jar/{1}'.format(dir_build, build_mode)
-    dir_jar_out = '{0}/test/lib/android/libs'.format(dir_root)
+    dir_ext = os.path.join(dir_root, 'ext/android')
+    dir_sdk = os.path.join(dir_root, 'ext/android/sdk')
+    dir_build = os.path.join(dir_sdk, 'Adjust')
+    dir_jar_in = os.path.join(dir_build, 'test-options/build/intermediates/aar_main_jar', build_mode)
+    dir_jar_out = os.path.join(dir_root, 'test/lib/android/libs')
 
     os.chdir(dir_build)
 
@@ -143,15 +151,16 @@ def build_native_test_options_android(build_mode='debug'):
         copy_files('classes.jar', dir_jar_in, dir_jar_out)
         rename_file('classes.jar', 'adjust-test-options.jar', dir_jar_out)
 
+
 # ------------------------------------------------------------------
 # build native Android OAID plugin
 # ------------------------------------------------------------------
 def build_native_plugin_oaid_android(build_mode='release'):
-    dir_ext     = '{0}/ext/android'.format(dir_root)
-    dir_sdk     = '{0}/ext/android/sdk'.format(dir_root)
-    dir_build   = '{0}/Adjust'.format(dir_sdk)
-    dir_jar_out = '{0}/plugins/oaid/android/libs'.format(dir_root)
-    dir_jar_in  = '{0}/sdk-plugin-oaid/build/libs'.format(dir_build)
+    dir_ext = os.path.join(dir_root, '/ext/android')
+    dir_sdk = os.path.join(dir_root, '/ext/android/sdk')
+    dir_build = os.path.join(dir_sdk, '/Adjust')
+    dir_jar_out = os.path.join(dir_root, '/plugins/oaid/android/libs')
+    dir_jar_in = os.path.join(dir_build, '/sdk-plugin-oaid/build/libs')
 
     os.chdir(dir_build)
 
@@ -177,26 +186,30 @@ def build_native_plugin_oaid_android(build_mode='release'):
         copy_files('sdk-plugin-oaid.jar', dir_jar_in, dir_jar_out)
         rename_file('sdk-plugin-oaid.jar', 'adjust-android-oaid.jar', dir_jar_out)
 
+
 # ------------------------------------------------------------------
 # build native iOS SDK
 # ------------------------------------------------------------------
+@only_mac_os
 def build_native_sdk_ios():
-    dir_ext     = '{0}/ext/ios'.format(dir_root)
-    dir_sdk     = '{0}/ext/ios/sdk'.format(dir_root)
-    dir_src     = '{0}/Adjust'.format(dir_sdk)
-    dir_src_out = '{0}/ios/Adjust'.format(dir_root)
+    dir_ext = os.path.join(dir_root, 'ext/ios')
+    dir_sdk = os.path.join(dir_root, 'ext/ios/sdk')
+    dir_src = os.path.join(dir_sdk, 'Adjust')
+    dir_src_out = os.path.join(dir_root, 'ios/Adjust')
 
     debug_green('Copying iOS SDK source files from {0} to {1} ...'.format(dir_src, dir_src_out))
     copy_dir_content(dir_src, dir_src_out)
 
+
 # ------------------------------------------------------------------
 # build native iOS test library
 # ------------------------------------------------------------------
+@only_mac_os
 def build_native_test_library_ios():
-    dir_ext     = '{0}/ext/ios'.format(dir_root)
-    dir_sdk     = '{0}/ext/ios/sdk'.format(dir_root)
-    dir_src     = '{0}/AdjustTests/AdjustTestLibrary/AdjustTestLibrary/'.format(dir_sdk)
-    dir_src_out = '{0}/test/lib/ios/AdjustTestLibrary/'.format(dir_root)
+    dir_ext = os.path.join(dir_root, 'ext/ios')
+    dir_sdk = os.path.join(dir_root, 'ext/ios/sdk')
+    dir_src = os.path.join(dir_sdk, 'AdjustTests/AdjustTestLibrary/AdjustTestLibrary/')
+    dir_src_out = os.path.join(dir_root, 'test/lib/ios/AdjustTestLibrary/')
 
     debug_green('Copying iOS test library source files from {0} to {1} ...'.format(dir_src, dir_src_out))
     copy_dir_content(dir_src, dir_src_out)

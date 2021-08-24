@@ -1,10 +1,9 @@
 #!/usr/bin/python
 
-from utils import *
 import anes as ane
 import apps as app
 import extensions as extension
-import argparse
+from utils import *
 
 # set script tag
 set_log_tag('ADOBE-AIR-SDK')

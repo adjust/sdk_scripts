@@ -1,4 +1,7 @@
 from adobe.utils import *
+import os
+
+from decorators import only_mac_os
 
 dir_root = get_root_dir()
 
@@ -37,19 +40,19 @@ def build_extension_sdk_android_release():
 
 # Build Adobe AIR SDK Android extension JAR.
 def build_extension_sdk_android(build_mode='release'):
-    dir_ext = '{0}/ext/android'.format(dir_root)
-    dir_bld_extension = '{0}/src/AdjustExtension'.format(dir_ext)
-    dir_src_extension = '{0}/src/AdjustExtension/extension/src/main/java/com/adjust/sdk'.format(dir_ext)
-    dir_src_sdk = '{0}/sdk/Adjust/sdk-core/src/main/java/com/adjust/sdk'.format(dir_ext)
-    dir_src_jar = '{0}/src/AdjustExtension/extension/build/libs/{1}'.format(dir_ext, build_mode)
+    dir_ext = os.path.join(dir_root, 'ext/android')
+    dir_bld_extension = os.path.join(dir_ext, 'src/AdjustExtension')
+    dir_src_extension = os.path.join(dir_ext, 'src/AdjustExtension/extension/src/main/java/com/adjust/sdk')
+    dir_src_sdk = os.path.join(dir_ext, 'sdk/Adjust/sdk-core/src/main/java/com/adjust/sdk')
+    dir_src_jar = os.path.join(dir_ext, 'src/AdjustExtension/extension/build/libs/', build_mode)
 
     # Update Android extension souce files from SDK extension directory.
     debug_green('Update all Android SDK source files in the extension source directory ...')
     excluded_files = [
-        '{0}/AdjustActivity.java'.format(dir_src_extension),
-        '{0}/AdjustExtension.java'.format(dir_src_extension),
-        '{0}/AdjustFunction.java'.format(dir_src_extension),
-        '{0}/AdjustContext.java'.format(dir_src_extension)]
+        os.path.join(dir_src_extension, 'AdjustActivity.java'),
+        os.path.join(dir_src_extension, 'AdjustExtension.java'),
+        os.path.join(dir_src_extension, 'AdjustFunction.java'),
+        os.path.join(dir_src_extension, 'AdjustContext.java')]
     change_dir(dir_root)
     clean_dir('*', dir_src_extension, excluded_files)
     copy_dir_content(dir_src_sdk, dir_src_extension)
@@ -79,19 +82,19 @@ def build_extension_test_android_release():
 
 # Build Adobe AIR SDK test library Android extension JAR.
 def build_extension_test_android(build_mode='release'):
-    dir_plugin = '{0}/test/plugin/android'.format(dir_root)
-    dir_bld_extension = '{0}/src/AdjustTestExtension'.format(dir_plugin)
-    dir_src_extension = '{0}/extension/src/main/java/com/adjust/test'.format(dir_bld_extension)
-    dir_src_test = '{0}/ext/android/sdk/Adjust/test-library/src/main/java/com/adjust/test'.format(dir_root)
-    dir_src_jar = '{0}/extension/build/libs/{1}'.format(dir_bld_extension, build_mode)
+    dir_plugin = os.path.join(dir_root, 'test/plugin/android')
+    dir_bld_extension = os.path.join(dir_plugin, 'src/AdjustTestExtension')
+    dir_src_extension = os.path.join(dir_bld_extension, 'extension/src/main/java/com/adjust/test')
+    dir_src_test = os.path.join(dir_root, 'ext/android/sdk/Adjust/test-library/src/main/java/com/adjust/test')
+    dir_src_jar = os.path.join(dir_bld_extension, 'extension/build/libs/', build_mode)
 
     # Update Android test extension souce files from SDK extension directory.
     debug_green('Update all Android SDK test library source files in the extension source directory ...')
     excluded_files = [
-        '{0}/AdjustTestExtension.java'.format(dir_src_extension),
-        '{0}/AdjustTestFunction.java'.format(dir_src_extension),
-        '{0}/AdjustTestContext.java'.format(dir_src_extension),
-        '{0}/CommandListener.java'.format(dir_src_extension)]
+        os.path.join(dir_src_extension, 'AdjustTestExtension.java'),
+        os.path.join(dir_src_extension, 'AdjustTestFunction.java'),
+        os.path.join(dir_src_extension, 'AdjustTestContext.java'),
+        os.path.join(dir_src_extension, 'CommandListener.java')]
     change_dir(dir_root)
     clean_dir('*', dir_src_extension, excluded_files)
     copy_dir_content(dir_src_test, dir_src_extension)
@@ -113,24 +116,27 @@ def build_extension_test_android(build_mode='release'):
 # iOS interface.
 
 # Build Adobe AIR SDK iOS extension .a library in debug mode.
+@only_mac_os
 def build_extension_sdk_ios_debug():
     build_extension_sdk_ios('debug')
 
 
 # Build Adobe AIR iOS SDK extension .a library in release mode.
+@only_mac_os
 def build_extension_sdk_ios_release():
     build_extension_sdk_ios('release')
 
 
 # Build Adobe AIR iOS SDK extension .a library.
+@only_mac_os
 def build_extension_sdk_ios(build_mode='release'):
-    dir_ext = '{0}/ext/ios'.format(dir_root)
-    dir_sdk = '{0}/sdk'.format(dir_ext)
-    dir_src_extension = '{0}/src/AdjustExtension'.format(dir_ext)
+    dir_ext = os.path.join(dir_root, 'ext/ios')
+    dir_sdk = os.path.join(dir_ext, 'sdk')
+    dir_src_extension = os.path.join(dir_ext, 'src/AdjustExtension')
 
     # Remove static AdjustSdk.framework.
     debug_green('Removing existing static AdjustSdk.framework ...')
-    recreate_dir('{0}/Frameworks/Static'.format(dir_sdk))
+    recreate_dir(os.path.join(dir_sdk, 'Frameworks/Static'))
 
     # Rebuild static AdjustSdk.framework.
     debug_green('Rebuilding static AdjustSdk.framework in {0} mode ...'.format(build_mode))
@@ -138,10 +144,10 @@ def build_extension_sdk_ios(build_mode='release'):
     xcode_rebuild('AdjustStatic', build_mode.capitalize())
 
     # Copy static AdjustSdk.framework to it's destination.
-    copy_dir_content('{0}/Frameworks/Static/AdjustSdk.framework'.format(dir_sdk),
-                     '{0}/include/Adjust/AdjustSdk.framework'.format(dir_src_extension))
-    copy_dir_content('{0}/Frameworks/Static/AdjustSdk.framework'.format(dir_sdk),
-                     '{0}/AdjustSdk.framework'.format(dir_ext))
+    copy_dir_content(os.path.join(dir_sdk, 'Frameworks/Static/AdjustSdk.framework'),
+                     os.path.join(dir_src_extension, 'include/Adjust/AdjustSdk.framework'))
+    copy_dir_content(os.path.join(dir_sdk, 'Frameworks/Static/AdjustSdk.framework'),
+                     os.path.join(dir_ext, 'AdjustSdk.framework'))
 
     # Build iOS extension .a library.
     debug_green('Building Adobe AIR iOS SDK extension .a library and outputing it to {0} ...'.format(dir_ext))
@@ -150,22 +156,25 @@ def build_extension_sdk_ios(build_mode='release'):
 
 
 # Build Adobe AIR SDK test library iOS extension .a library in debug mode.
+@only_mac_os
 def build_extension_test_ios_debug():
     build_extension_test_ios('debug')
 
 
 # Build Adobe AIR SDK test library iOS extension .a library in release mode.
+@only_mac_os
 def build_extension_test_ios_release():
     build_extension_test_ios('release')
 
 
 # Build Adobe AIR SDK test library iOS extension .a library.
+@only_mac_os
 def build_extension_test_ios(build_mode='release'):
-    dir_plugin = '{0}/test/plugin/ios'.format(dir_root)
-    dir_ext = '{0}/ext/ios'.format(dir_root)
-    dir_src_extension = '{0}/test/plugin/ios/src/AdjustTestExtension'.format(dir_root)
-    dir_test_lib = '{0}/sdk/AdjustTests/AdjustTestLibrary'.format(dir_ext)
-    dir_frameworks = '{0}/sdk/Frameworks/Static'.format(dir_ext)
+    dir_plugin = os.path.join(dir_root, 'test/plugin/ios')
+    dir_ext = os.path.join(dir_root, 'ext/ios')
+    dir_src_extension = os.path.join(dir_root, 'test/plugin/ios/src/AdjustTestExtension')
+    dir_test_lib = os.path.join(dir_ext, 'sdk/AdjustTests/AdjustTestLibrary')
+    dir_frameworks = os.path.join(dir_ext, 'sdk/Frameworks/Static')
 
     # Remove static AdjustTestLibrary.framework.
     debug_green('Removing existing static AdjustTestLibrary.framework ...')
@@ -177,10 +186,10 @@ def build_extension_test_ios(build_mode='release'):
     xcode_rebuild('AdjustTestLibraryStatic', build_mode.capitalize())
 
     # Copy static AdjustTestLibrary.framework to it's destination.
-    copy_dir_content('{0}/AdjustTestLibrary.framework'.format(dir_frameworks),
-                     '{0}/AdjustTestLibrary.framework'.format(dir_src_extension))
-    copy_dir_content('{0}/AdjustTestLibrary.framework'.format(dir_frameworks),
-                     '{0}/AdjustTestLibrary.framework'.format(dir_plugin))
+    copy_dir_content(os.path.join(dir_frameworks, 'AdjustTestLibrary.framework'),
+                     os.path.join(dir_src_extension, 'AdjustTestLibrary.framework'))
+    copy_dir_content(os.path.join(dir_frameworks, 'AdjustTestLibrary.framework'),
+                     os.path.join(dir_plugin, 'AdjustTestLibrary.framework'))
 
     # Build iOS test extension .a library.
     debug_green(

@@ -1,7 +1,5 @@
 #!/usr/bin/python
 
-import os, sys
-import argparse
 import apps as apps
 import natives as natives
 from utils import *
@@ -15,7 +13,6 @@ set_log_tag('REACT-NATIVE-SDK')
 # make sure script gets executed and not imported somewhere
 # ------------------------------------------------------------------
 if __name__ != "__main__":
-    error('Error. Do not import this script, but run it explicitly.')
     exit()
 
 # ------------------------------------------------------------------

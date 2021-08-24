@@ -1,20 +1,23 @@
 from adobe.utils import *
+import os
+
+from decorators import only_mac_os
 
 dir_root = get_root_dir()
 version = get_version_string()
 
 
 def build_and_run_app_example_android():
-    dir_app = '{0}/example'.format(dir_root)
+    dir_app = os.path.join(dir_root, 'example')
 
     # Remove Adjust SDK ANE from example app.
     debug_green('Removing SDK ANE file from example app ...')
-    remove_files_with_pattern('Adjust-*.*.*.ane', '{0}/lib/'.format(dir_app))
+    remove_files_with_pattern('Adjust-*.*.*.ane', os.path.join(dir_app, 'lib/'))
 
     # Copy newly generated Adjust SDK ANE to example app.
     debug_green('Copying SDK ANE file to example app ...')
-    create_dir_if_not_present('{0}/lib'.format(dir_app))
-    copy_file('{0}/Adjust-{1}.ane'.format(dir_root, version), '{0}/lib/Adjust-{1}.ane'.format(dir_app, version))
+    create_dir_if_not_present(os.path.join(dir_app, 'lib/'))
+    copy_file(os.path.join(dir_root, f'Adjust-{version}.ane'), os.path.join(dir_app, 'lib', f'Adjust-{version}.ane'))
 
     # Run 'amxmlc'.
     debug_green('Running \'amxmlc\' ...')
@@ -47,18 +50,19 @@ def build_and_run_app_example_android():
 
 
 def build_and_run_app_test_android():
-    dir_app = '{0}/test/app'.format(dir_root)
+    dir_app = os.path.join(dir_root, 'test/app')
 
     # Remove Adjust SDK and test library ANE from test app.
     debug_green('Removing SDK and test library ANE files from test app ...')
-    remove_files_with_pattern('Adjust-*.*.*.ane', '{0}/lib/'.format(dir_app))
-    remove_files_with_pattern('AdjustTest-*.*.*.ane', '{0}/lib'.format(dir_app))
+    remove_files_with_pattern('Adjust-*.*.*.ane', os.path.join(dir_app, 'lib/'))
+    remove_files_with_pattern('AdjustTest-*.*.*.ane', os.path.join(dir_app, 'lib/'))
 
     # Copy Adjust SDK and test library ANE files to test app.
     debug_green('Copying SDK and test library ANE files to test app ...')
-    create_dir_if_not_present('{0}/lib'.format(dir_app))
-    copy_file('{0}/Adjust-{1}.ane'.format(dir_root, version), '{0}/lib/Adjust-{1}.ane'.format(dir_app, version))
-    copy_file('{0}/AdjustTest-{1}.ane'.format(dir_root, version), '{0}/lib/AdjustTest-{1}.ane'.format(dir_app, version))
+    create_dir_if_not_present(os.path.join(dir_app, 'lib'))
+    copy_file(os.path.join(dir_root, f'Adjust-{version}.ane'), os.path.join(dir_app, 'lib', f'Adjust-{version}.ane'))
+    copy_file(os.path.join(dir_root, f'AdjustTest-{version}.ane'),
+              os.path.join(dir_app, 'lib', f'AdjustTest-{version}.ane'))
 
     # Run 'amxmlc'.
     debug_green('Running \'amxmlc\' ...')
@@ -90,21 +94,22 @@ def build_and_run_app_test_android():
     adb_shell_monkey('air.com.adjust.examples')
 
 
+@only_mac_os
 def build_and_run_app_example_ios():
-    dir_app = '{0}/example'.format(dir_root)
-    file_app_xml = '{0}/Main-app.xml'.format(dir_app)
+    dir_app = os.path.join(dir_root, 'example')
+    file_app_xml = os.path.join(dir_app, 'Main-app.xml')
 
     path_prov_profile = get_env_variable('DEV_ADOBE_PROVISIONING_PROFILE_PATH')
     path_keystore_file = get_env_variable('KEYSTORE_FILE_PATH')
 
     # Remove Adjust SDK ANE from example app.
     debug_green('Removing SDK ANE file from example app ...')
-    remove_files_with_pattern('Adjust-*.*.*.ane', '{0}/lib/'.format(dir_app))
+    remove_files_with_pattern('Adjust-*.*.*.ane', os.path.join(dir_app, 'lib/'))
 
     # Copy newly generated Adjust SDK ANE to example app.
     debug_green('Copying SDK ANE file to example app ...')
-    create_dir_if_not_present('{0}/lib'.format(dir_app))
-    copy_file('{0}/Adjust-{1}.ane'.format(dir_root, version), '{0}/lib/Adjust-{1}.ane'.format(dir_app, version))
+    create_dir_if_not_present(os.path.join(dir_app, 'lib'))
+    copy_file(os.path.join(dir_root, f'Adjust-{version}.ane'), os.path.join(dir_app, 'lib', f'Adjust-{version}.ane'))
 
     # Run 'amxmlc'.
     debug_green('Running \'amxmlc\' ...')
@@ -124,23 +129,25 @@ def build_and_run_app_example_ios():
     adobe_air_package_ipa_file(path_prov_profile, path_keystore_file, file_app_xml)
 
 
+@only_mac_os
 def build_and_run_app_test_ios():
-    dir_app = '{0}/test/app'.format(dir_root)
-    file_app_xml = '{0}/Main-app.xml'.format(dir_app)
+    dir_app = os.path.join(dir_root, 'test/app')
+    file_app_xml = os.path.join(dir_app, 'Main-app.xml')
 
     path_prov_profile = get_env_variable('DEV_ADOBE_PROVISIONING_PROFILE_PATH')
     path_keystore_file = get_env_variable('KEYSTORE_FILE_PATH')
 
     # Remove Adjust SDK and test library ANE from test app.
     debug_green('Removing SDK and test library ANE files from test app ...')
-    remove_files_with_pattern('Adjust-*.*.*.ane', '{0}/lib/'.format(dir_app))
-    remove_files_with_pattern('AdjustTest-*.*.*.ane', '{0}/lib'.format(dir_app))
+    remove_files_with_pattern('Adjust-*.*.*.ane', os.path.join(dir_app, 'lib/'))
+    remove_files_with_pattern('AdjustTest-*.*.*.ane', os.path.join(dir_app, 'lib/'))
 
     # Copy Adjust SDK and test library ANE files to test app.
     debug_green('Copying SDK and test library ANE files to test app ...')
     create_dir_if_not_present('{0}/lib'.format(dir_app))
-    copy_file('{0}/Adjust-{1}.ane'.format(dir_root, version), '{0}/lib/Adjust-{1}.ane'.format(dir_app, version))
-    copy_file('{0}/AdjustTest-{1}.ane'.format(dir_root, version), '{0}/lib/AdjustTest-{1}.ane'.format(dir_app, version))
+    copy_file(os.path.join(dir_root, f'Adjust-{version}.ane'), os.path.join(dir_app, 'lib', f'Adjust-{version}.ane'))
+    copy_file(os.path.join(dir_root, f'AdjustTest-{version}.ane'),
+              os.path.join(dir_app, 'lib', f'AdjustTest-{version}.ane'))
 
     # Run 'amxmlc'.
     debug_green('Running \'amxmlc\' ...')

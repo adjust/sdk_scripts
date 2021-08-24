@@ -1,6 +1,10 @@
 # Various utility methods.
 
-import os, shutil, glob, time, sys, platform, subprocess
+import glob
+import os
+import platform
+import shutil
+import subprocess
 from distutils.dir_util import copy_tree
 
 
@@ -209,7 +213,7 @@ def copy_file(file_source, file_destination):
 
 # Run 'compc' command for SDK.
 def adobe_air_compc_sdk(root_dir, build_dir):
-    path_air_sdk = get_env_variable('AIR_SDK_PATH');
+    path_air_sdk = get_env_variable('AIR_SDK_PATH')
     file_swc = '{0}/frameworks/libs/air/airglobal.swc'.format(path_air_sdk)
     compc = '{0}/bin/compc'.format(path_air_sdk)
     dir_src = '{0}/default/src'.format(root_dir)
@@ -228,7 +232,7 @@ def adobe_air_compc_sdk(root_dir, build_dir):
 
 # Run 'compc' command for SDK test library.
 def adobe_air_compc_test(root_dir, build_dir):
-    air_sdk_path = get_env_variable('AIR_SDK_PATH');
+    air_sdk_path = get_env_variable('AIR_SDK_PATH')
     compc = '{0}/bin/compc'.format(air_sdk_path)
     default_src_dir = '{0}/default/src'.format(root_dir)
     external_lib_path = '{0}/frameworks/libs/air/airglobal.swc'.format(air_sdk_path)
@@ -241,7 +245,7 @@ def adobe_air_compc_test(root_dir, build_dir):
 
 # Run 'compc' command to build .swc file for SDK.
 def adobe_air_compc_swc_sdk(root_dir, build_dir):
-    air_sdk_path = get_env_variable('AIR_SDK_PATH');
+    air_sdk_path = get_env_variable('AIR_SDK_PATH')
     compc = '{0}/bin/compc'.format(air_sdk_path)
     src_dir = '{0}/src'.format(root_dir)
     external_lib_path = '{0}/frameworks/libs/air/airglobal.swc'.format(air_sdk_path)
@@ -259,7 +263,7 @@ def adobe_air_compc_swc_sdk(root_dir, build_dir):
 
 # Run 'compc' command to build .swc file for SDK test library.
 def adobe_air_compc_swc_test(root_dir, build_dir):
-    air_sdk_path = get_env_variable('AIR_SDK_PATH');
+    air_sdk_path = get_env_variable('AIR_SDK_PATH')
     compc = '{0}/bin/compc'.format(air_sdk_path)
     src_dir = '{0}/src'.format(root_dir)
     external_lib_path = '{0}/frameworks/libs/air/airglobal.swc'.format(air_sdk_path)
@@ -271,7 +275,7 @@ def adobe_air_compc_swc_test(root_dir, build_dir):
 
 # Run 'adt' command for SDK.
 def adobe_air_adt_sdk(version):
-    air_sdk_path = get_env_variable('AIR_SDK_PATH');
+    air_sdk_path = get_env_variable('AIR_SDK_PATH')
     adt = '{0}/bin/adt'.format(air_sdk_path)
 
     execute_command(
@@ -286,7 +290,7 @@ def adobe_air_adt_sdk(version):
 
 # Run 'adt' command for SDK test library.
 def adobe_air_adt_test(root_dir, build_dir, version):
-    air_sdk_path = get_env_variable('AIR_SDK_PATH');
+    air_sdk_path = get_env_variable('AIR_SDK_PATH')
     adt = '{0}/bin/adt'.format(air_sdk_path)
 
     execute_command(
