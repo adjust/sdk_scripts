@@ -2,7 +2,7 @@ import platform
 
 
 def only_mac_os(func):
-
+    """Decorator for macOS only functions."""
     def wrapper(*args, **kwargs):
         if platform.system() == 'Darvin':
             func(*args, **kwargs)

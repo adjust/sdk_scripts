@@ -1,133 +1,134 @@
-import os
 import platform
+from configparser import ConfigParser
 
 import click
 
-from adobe import anes as adobe_ane
-from adobe import apps as adobe_app
-from adobe import extensions as adobe_extensions
-from adobe.utils import set_log_tag
-from react_native import apps as react_app
-from react_native import natives as react_natives
+from adobe_air import Adobe
+from react_native import ReactNative
+from utils import convert_to_abspath
 
 PLATFORM = platform.system()
+CONFIG = ConfigParser()
 
 
 @click.group()
-def main(*args, **kwargs):
+@click.option('--config_file', '-c', help='config file path', type=click.File('r'), default='scripts_config.ini')
+def main(config_file):
     click.secho(f'Platform: {PLATFORM}', fg='bright_green')
+    click.secho(f'Reading config file: {config_file.name}', fg='bright_green')
+    CONFIG.read_file(config_file)
+    for section in CONFIG.sections():
+        for key, value in CONFIG[section].items():
+            if value.startswith(('.', '..', '~')):
+                CONFIG[section][key] = convert_to_abspath(value)
+
+
+@main.command('print-config', help='shows config variables')
+def print_config():
+    for section in CONFIG.sections():
+        click.secho(f'[{section}]', fg='blue')
+        for key, value in CONFIG[section].items():
+            click.secho(f'{key}: {value}')
 
 
 @main.group(help='adobe sub-command')
-def adobe(*args, **kwargs):
+def adobe():
     click.secho('Running: Adobe', fg='bright_magenta')
-    set_log_tag('ADOBE-AIR-SDK')
 
 
 @main.group(help='react-native sub-command')
-@click.option('--path', help='path to projects root')
-def react_native(path):
-    if path and os.path.exists(path):
-        click.secho(f'Running: React Native on {path}', fg='bright_magenta')
-        os.chdir(path)
-    else:
-        click.secho(f'Error! Path not set or not found!', fg='red')
+def react_native():
+    click.secho('Running: React Native', fg='bright_magenta')
 
 
 @react_native.command()
-@click.pass_context
-def test(ctx):
-    click.echo('test')
-    path = ctx.parent.params.get('path')
-    os.chdir(path)
-    click.echo(os.path.abspath('.'))
+@click.option('--target-type', type=click.Choice(['sdk', 'test-library', 'test-options', 'plugin-oaid']))
+@click.option('--build-platform', type=click.Choice(['android', 'ios']))
+@click.option('--mode', type=click.Choice(['debug', 'release']))
+def build_native(target_type, build_platform, mode):
+    react = ReactNative(CONFIG)
+    if target_type == 'sdk':
+        react.build_native_sdk(build_platform, mode)
+    elif target_type == 'test-library':
+        react.build_native_test_library(build_platform, mode)
+    elif target_type == 'test-options':
+        react.build_native_test_options(build_platform, mode)
+    elif target_type == 'plugin-oaid':
+        react.build_native_plugin_oaid(build_platform, mode)
+
+
+@react_native.command()
+@click.option('--target-type', type=click.Choice(['example-app', 'test-app']))
+@click.option('--build-platform', type=click.Choice(['android', 'ios']))
+@click.option('--mode', type=click.Choice(['debug', 'release']))
+def run(target_type, build_platform, mode):
+    react = ReactNative(CONFIG)
+    if target_type == 'example-app':
+        react.build_native_sdk(build_platform, mode)
+        if build_platform == 'android':
+            react.build_native_plugin_oaid(build_platform, mode)
+            react.build_and_run_example_app_android()
+        elif build_platform == 'ios':
+            react.build_and_run_example_app_ios()
+    elif target_type == 'test-app':
+        react.build_native_sdk(build_platform, mode)
+        react.build_native_test_library(build_platform, mode)
+        react.build_native_test_options(build_platform, mode)
+        if build_platform == 'android':
+            react.build_native_plugin_oaid(build_platform, mode)
+            react.build_and_run_test_app_android()
+        elif build_platform == 'ios':
+            react.build_and_run_test_app_ios()
 
 
 @adobe.command()
-@click.option('--app_type', type=click.Choice(['sdk', 'test']))
-@click.option('--build_platform', type=click.Choice(['android', 'ios']))
+@click.option('--app-type', type=click.Choice(['sdk', 'test']))
+@click.option('--build-platform', type=click.Choice(['android', 'ios']))
 @click.option('--mode', type=click.Choice(['debug', 'release']))
 def build_extension(mode, app_type, build_platform):
     click.secho(f'Building {app_type}. Mode: {mode} for {build_platform}', fg='green')
+    adobe_runner = Adobe(CONFIG)
     if app_type == 'sdk':
-        adobe_extensions.build_extension_sdk(build_platform, mode)
+        adobe_runner.build_extension_sdk(build_platform, mode)
     elif app_type == 'test':
-        adobe_extensions.build_extension_test(build_platform, mode)
+        adobe_runner.build_extension_test(build_platform, mode)
     else:
         click.secho(f'Error! {app_type} not found!', fg='red')
 
 
 @adobe.command()
-@click.option('--app_type', type=click.Choice(['sdk', 'test']))
+@click.option('--app-type', type=click.Choice(['sdk', 'test']))
 def build_ane(app_type):
+    adobe_runner = Adobe(CONFIG)
     if app_type == 'sdk':
-        adobe_ane.build_ane_sdk()
+        adobe_runner.build_ane_sdk()
     elif app_type == 'test':
-        adobe_ane.build_ane_test()
+        adobe_runner.build_ane_test()
     else:
         click.secho(f'Error! {app_type} not found!', fg='red')
 
 
 @adobe.command()
-@click.option('--app_type', type=click.Choice(['sdk', 'test', 'example']))
-@click.option('--build_platform', type=click.Choice(['android', 'ios']))
+@click.option('--app-type', type=click.Choice(['sdk', 'test', 'example']))
+@click.option('--build-platform', type=click.Choice(['android', 'ios']))
 def run_app(app_type, build_platform):
+    adobe_runner = Adobe(CONFIG)
     if app_type == 'example':
-        adobe_extensions.build_extension_sdk_android_release()
-        adobe_extensions.build_extension_sdk_ios_release()
-        adobe_ane.build_ane_sdk()
+        adobe_runner.build_extension_sdk(build_platform, 'release')
+        adobe_runner.build_ane_sdk()
         if build_platform == 'android':
-            adobe_app.build_and_run_app_example_android()
+            adobe_runner.build_and_run_app_example_android()
         elif build_platform == 'ios':
-            adobe_app.build_and_run_app_example_ios()
+            adobe_runner.build_and_run_app_example_ios()
     elif app_type == 'test':
-        adobe_extensions.build_extension_sdk_android_release()
-        adobe_extensions.build_extension_sdk_ios_release()
-        adobe_extensions.build_extension_test_android_debug()
-        adobe_extensions.build_extension_test_ios_debug()
-        adobe_ane.build_ane_sdk()
-        adobe_ane.build_ane_test()
+        adobe_runner.build_extension_sdk(build_platform, 'release')
+        adobe_runner.build_extension_sdk(build_platform, 'debug')
+        adobe_runner.build_ane_sdk()
+        adobe_runner.build_ane_test()
         if build_platform == 'android':
-            adobe_app.build_and_run_app_test_android()
+            adobe_runner.build_and_run_app_test_android()
         elif build_platform == 'ios':
-            adobe_app.build_and_run_app_test_ios()
-
-
-@react_native.command()
-@click.option('--target_type', type=click.Choice(['sdk', 'test-library', 'test-options', 'plugin-oaid']))
-@click.option('--build_platform', type=click.Choice(['android', 'ios']))
-@click.option('--mode', type=click.Choice(['debug', 'release']))
-def build_native(target_type, build_platform, mode):
-    if target_type == 'sdk':
-        react_natives.build_native_sdk(build_platform, mode)
-    elif target_type == 'test-library':
-        react_natives.build_native_test_library(build_platform, mode)
-    elif target_type == 'test-options':
-        react_natives.build_native_test_options(build_platform, mode)
-    elif target_type == 'plugin-oaid':
-        react_natives.build_native_plugin_oaid(build_platform, mode)
-
-
-@react_native.command()
-@click.option('--target_type', type=click.Choice(['example-app', 'test-app']))
-@click.option('--build_platform', type=click.Choice(['android', 'ios']))
-def run(target_type, build_platform):
-    if target_type == 'example-app':
-        react_natives.build_native_sdk(build_platform)
-        if build_platform == 'android':
-            react_natives.build_native_plugin_oaid(build_platform)
-            react_app.build_and_run_example_app_android()
-        elif build_platform == 'ios':
-            react_app.build_and_run_example_app_ios()
-    elif target_type == 'test-app':
-        react_natives.build_native_sdk(build_platform)
-        react_natives.build_native_test_library(build_platform)
-        react_natives.build_native_test_options(build_platform)
-        if build_platform == 'android':
-            react_natives.build_native_plugin_oaid(build_platform)
-            react_app.build_and_run_test_app_android()
-        elif build_platform == 'ios':
-            react_app.build_and_run_test_app_ios()
+            adobe_runner.build_and_run_app_test_ios()
 
 
 if __name__ == '__main__':
