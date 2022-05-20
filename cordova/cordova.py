@@ -90,7 +90,6 @@ try:
     # ------------------------------------------------------------------
     elif args_count == 4 and action_type == 'run':
         if target_type == 'example-app':
-            natives.build_native_sdk(platform)
             if platform == 'android':
                 apps.build_and_run_example_app_android()
             elif platform == 'ios':
@@ -111,4 +110,8 @@ finally:
     # remove autocreated Python compiled files
     # ------------------------------------------------------------------
     remove_files_with_pattern('*.pyc', get_scripts_dir())
+    # ------------------------------------------------------------------
+    # TODO: figure out proper way to remove __pycache__ directory
+    # ------------------------------------------------------------------
+    remove_dir_if_exists('__pycache__')
     debug_green('Script completed!')

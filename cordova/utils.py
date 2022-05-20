@@ -1,5 +1,6 @@
 ##
 ##  Various util python methods which can be utilized and shared among different scripts
+## TODO: clean up this file and reuse it among all scripts inside of the sdk_scripts repo
 ##
 import os, shutil, glob, time, sys, platform, subprocess
 from distutils.dir_util import copy_tree
@@ -255,3 +256,17 @@ def cordova_add_platform(platform):
 
 def cordova_remove_platform(platform):
     execute_command(['cordova', 'platform', 'remove', platform])
+
+### xcode
+def xcode_build(target, configuration='Release'):
+    execute_command(['xcodebuild', '-target', target, '-configuration', configuration, 'clean', 'build', '-UseModernBuildSystem=NO'])
+
+### adb
+def adb_uninstall(package):
+    execute_command(['adb', 'uninstall', package])
+
+def adb_install_apk(path):
+    execute_command(['adb', 'install', '-r', path])
+
+def adb_shell(app_package):
+    execute_command(['adb', 'shell', 'monkey', '-p', app_package, '1'])
