@@ -187,3 +187,71 @@ def is_windows():
 # Get system enviornment variable value.
 def get_env_variable(var_name):
     return os.environ.get(var_name);
+
+############################################################
+### cordova specific
+
+def _remove_platforms():
+    debug_green('Removing platforms ...')
+    cordova_remove_platform('android')
+    cordova_remove_platform('ios')
+
+def clean_test_app(root_dir):
+    example_dir             = '{0}/example'.format(root_dir)
+    sdk_name                = 'com.adjust.sdk'
+    adjust_sdk_plugin_dir   = '{0}/plugins/com.adjust.sdk'.format(example_dir)
+
+    debug_green('Removing cordova plugins ...')
+    os.chdir(example_dir)
+    subprocess.call(['cordova', 'plugin', 'rm', sdk_name])
+    subprocess.call(['cordova', 'plugin', 'rm', 'cordova-plugin-console'])
+    subprocess.call(['cordova', 'plugin', 'rm', 'cordova-plugin-customurlscheme'])
+    subprocess.call(['cordova', 'plugin', 'rm', 'cordova-plugin-dialogs'])
+    subprocess.call(['cordova', 'plugin', 'rm', 'cordova-plugin-whitelist'])
+    subprocess.call(['cordova', 'plugin', 'rm', 'cordova-plugin-device'])
+    subprocess.call(['cordova', 'plugin', 'rm', 'cordova-universal-links-plugin'])
+
+    remove_dir_if_exists(adjust_sdk_plugin_dir)
+    _remove_platforms()
+
+def clean_example_app(root_dir):
+    test_dir                    = '{0}/test/app'.format(root_dir)
+    sdk_name                    = 'com.adjust.sdk'
+    test_plugin_name            = 'com.adjust.test'
+    adjust_sdk_plugin_dir       = '{0}/plugins/com.adjust.sdk'.format(test_dir)
+    adjust_sdk_test_plugin_dir  = '{0}/plugins/com.adjust.test'.format(test_dir)
+
+    debug_green('Removing cordova plugins ...')
+    os.chdir(test_dir)
+    subprocess.call(['cordova', 'plugin', 'rm', sdk_name])
+    subprocess.call(['cordova', 'plugin', 'rm', test_plugin_name])
+
+    remove_dir_if_exists(adjust_sdk_plugin_dir)
+    remove_dir_if_exists(adjust_sdk_test_plugin_dir)
+    _remove_platforms()
+
+def cordova_add_plugin(plugin_name, options=None):
+    cmd_params = ['cordova', 'plugin', 'add', plugin_name]
+    if not options == None:
+        for opt in options:
+            cmd_params.append(opt)
+    execute_command(cmd_params)
+
+def cordova_remove_plugin(plugin_name):
+    execute_command(['cordova', 'plugin', 'remove', plugin_name])
+
+def cordova_build(platform, options=None):
+    cmd_params = ['cordova', 'build', platform]
+    if not options == None:
+        for opt in options:
+            cmd_params.append(opt)
+    execute_command(cmd_params)
+
+def cordova_run(platform):
+    execute_command(['cordova', 'run', platform])
+
+def cordova_add_platform(platform):
+    execute_command(['cordova', 'platform', 'add', platform])
+
+def cordova_remove_platform(platform):
+    execute_command(['cordova', 'platform', 'remove', platform])

@@ -4,272 +4,247 @@ from utils import *
 dir_root = get_root_dir()
 
 def build_and_run_example_app_android():
-    dir_app                 = '{0}/example'.format(dir_root)
-    dir_temp                = '{0}/temp'.format(dir_root)
-    dir_node_modules_sdk    = '{0}/node_modules/react-native-adjust'.format(dir_app)
-    dir_node_modules_oaid   = '{0}/node_modules/react-native-adjust-oaid'.format(dir_app)
+    # ------------------------------------------------------------------
+    # paths
+    # ------------------------------------------------------------------
+    plugin_temp_dir     = '{0}/temp_plugin'.format(dir_root)
+    example_app_dir     = '{0}/example-cordova'.format(dir_root)
+    sdk_plugin_package  = 'com.adjust.sdk'
+    example_app_package = 'com.adjust.examples'
 
     # ------------------------------------------------------------------
-    # uninstalling example app from device/emulator
+    # remove example app from test device
     # ------------------------------------------------------------------
-    debug_green('Uninstalling example app from device/emulator ...')
-    execute_command(['adb', 'uninstall', 'com.adjust.examples'])
+    debug_green('Removing example app from test device ...')
+    adb_uninstall(example_app_package)
 
     # ------------------------------------------------------------------
-    # removing react-native-adjust from example app
+    # package plugin content to custom directory
     # ------------------------------------------------------------------
-    change_dir(dir_app)
-    debug_green('Removing react-native-adjust and react-native-adjust-oaid from example app ...')
-    execute_command(['yarn', 'remove', 'react-native-adjust'])
-    remove_dir_if_exists(dir_node_modules_sdk)
-    execute_command(['yarn', 'remove', 'react-native-adjust-oaid'])
-    remove_dir_if_exists(dir_node_modules_oaid)
+    debug_green('Packaging plugin content to custom directory ...')
+    _recreate_plugin_temp_dir(plugin_temp_dir)
 
     # ------------------------------------------------------------------
-    # installing dependencies
+    # remove 'android' platform from example app
     # ------------------------------------------------------------------
-    debug_green('Check for dependencies updates [yarn upgrade] ...')
-    execute_command(['yarn', 'upgrade'])
-    debug_green('Installing dependencies [yarn install] ...')
-    execute_command(['yarn', 'install'])
+    debug_green('Installing \'android\' platform from example app ...')
+    change_dir(example_app_dir)
+    cordova_remove_platform('android')
 
     # ------------------------------------------------------------------
-    # copying react-native-adjust content to temp directory
+    # install 'android' platform in example app
     # ------------------------------------------------------------------
-    debug_green('Copying react-native-adjust content to temp directory ...')
-    copy_content_to_temp_dir()
+    debug_green('Installing \'android\' platform in example app ...')
+    cordova_add_platform('android')
 
     # ------------------------------------------------------------------
-    # adding react-native-adjust to example app
+    # re-install plugins to example app
     # ------------------------------------------------------------------
-    change_dir(dir_app)
-    debug_green('Adding react-native-adjust to example app ...')
-    execute_command(['yarn', 'add', '../temp'])
-    debug_green('Adding react-native-adjust-oaid to example app ...')
-    execute_command(['yarn', 'add', '../plugins/oaid'])
-
-    # TODO: check if this is needed, seems it's not
-    #       error React Native CLI uses autolinking for native dependencies,
-    #       but the following modules are linked manually
-    # ------------------------------------------------------------------
-    # linking react-native-adjust
-    # ------------------------------------------------------------------
-    # debug_green('Linking react-native-adjust ...')
-    # execute_command(['react-native', 'link', 'react-native-adjust'])
+    debug_green('Re-installing plugins to example app ...')
+    cordova_remove_plugin(sdk_plugin_package)
+    cordova_add_plugin(plugin_temp_dir, options=['--verbose', '--nofetch'])
+    cordova_add_plugin('cordova-plugin-console')
+    cordova_add_plugin('cordova-plugin-customurlscheme', options=['--variable', 'URL_SCHEME=adjust-example'])
+    cordova_add_plugin('cordova-plugin-dialogs')
+    cordova_add_plugin('cordova-plugin-whitelist')
+    cordova_add_plugin('https://github.com/apache/cordova-plugin-device.git')
+    cordova_add_plugin('cordova-universal-links-plugin')
 
     # ------------------------------------------------------------------
-    # cleaning up the temporary directory
+    # build Cordova example app project
     # ------------------------------------------------------------------
-    debug_green('Cleanup ...')
-    remove_dir_if_exists(dir_temp)
+    debug_green('Building Cordova example app project ...')
+    cordova_build('android', options=['--verbose'])
 
     # ------------------------------------------------------------------
-    # building and running example app on device/emulator
+    # run Cordova example app
+    # cordova_run('android') # <-- does not seem to work, some Cordova specific error
     # ------------------------------------------------------------------
-    debug_green('Building and running example app on device/emulator ...')
-    execute_command(['react-native', 'run-android'])
+    debug_green('Installing & running Cordova example app ...')
+    adb_install_apk('platforms/android/app/build/outputs/apk/debug/app-debug.apk')
+    adb_shell(example_app_package)
+
+    # ------------------------------------------------------------------
+    # clean up temporary stuff
+    # ------------------------------------------------------------------
+    debug_green('Cleaning up temporary directorie(s) ...')
+    remove_dir_if_exists(plugin_temp_dir)
 
 def build_and_run_example_app_ios():
-    dir_app                 = '{0}/example'.format(dir_root)
-    dir_temp                = '{0}/temp'.format(dir_root)
-    dir_node_modules_sdk    = '{0}/node_modules/react-native-adjust'.format(dir_app)
+    # ------------------------------------------------------------------
+    # paths
+    # ------------------------------------------------------------------
+    temp_plugin_dir    = '{0}/temp_plugin'.format(dir_root)
+    example_app_dir    = '{0}/example-cordova'.format(dir_root)
+    sdk_plugin_package = 'com.adjust.sdk'
 
     # ------------------------------------------------------------------
-    # removing react-native-adjust from example app
+    # package plugin content to custom directory
     # ------------------------------------------------------------------
-    change_dir(dir_app)
-    debug_green('Removing react-native-adjust from example app ...')
-    execute_command(['yarn', 'remove', 'react-native-adjust'])
-    remove_dir_if_exists(dir_node_modules_sdk)
+    debug_green('Packaging plugin content to custom directory ...')
+    _recreate_plugin_temp_dir(temp_plugin_dir)
 
     # ------------------------------------------------------------------
-    # installing dependencies
+    # remove 'ios' platform from example app
     # ------------------------------------------------------------------
-    debug_green('Check for dependencies updates [yarn upgrade] ...')
-    execute_command(['yarn', 'upgrade'])
-    debug_green('Installing dependencies [yarn install] ...')
-    execute_command(['yarn', 'install'])
+    debug_green('Removing \'ios\' platform from example app ...')
+    change_dir(example_app_dir)
+    cordova_remove_platform('ios')
 
     # ------------------------------------------------------------------
-    # copying react-native-adjust content to temp directory
+    # install 'ios' platform to example app
     # ------------------------------------------------------------------
-    debug_green('Copying react-native-adjust content to temp directory ...')
-    copy_content_to_temp_dir()
+    debug_green('Installing \'ios\' platform to example app ...')
+    cordova_add_platform('ios')
 
     # ------------------------------------------------------------------
-    # adding react-native-adjust to example app
+    # re-install plugins to example app
     # ------------------------------------------------------------------
-    change_dir(dir_app)
-    debug_green('Adding react-native-adjust to example app ...')
-    execute_command(['yarn', 'add', '../temp'])
-
-    # TODO: check if this is needed, seems it's not
-    #       error React Native CLI uses autolinking for native dependencies,
-    #       but the following modules are linked manually
-    # ------------------------------------------------------------------
-    # linking react-native-adjust
-    # ------------------------------------------------------------------
-    # debug_green('Linking react-native-adjust ...')
-    # execute_command(['react-native', 'link', 'react-native-adjust'])
+    debug_green('Re-installing plugins ...')
+    cordova_remove_plugin(sdk_plugin_package)
+    cordova_add_plugin(temp_plugin_dir)
+    cordova_add_plugin('cordova-plugin-console')
+    cordova_add_plugin('cordova-plugin-customurlscheme', options=['--variable', 'URL_SCHEME=adjust-example'])
+    cordova_add_plugin('cordova-plugin-dialogs')
+    cordova_add_plugin('cordova-plugin-whitelist')
+    cordova_add_plugin('https://github.com/apache/cordova-plugin-device.git')
 
     # ------------------------------------------------------------------
-    # update all the Pods if needed
+    # run example app
     # ------------------------------------------------------------------
-    change_dir('{0}/{1}'.format(dir_app, 'ios'))
-    execute_command(['pod', 'update'])
+    debug_green('Running Cordova example app project ...')
+    cordova_run('ios')
 
     # ------------------------------------------------------------------
-    # cleaning up the temporary directory
+    # build successful!
     # ------------------------------------------------------------------
-    debug_green('Cleanup ...')
-    remove_dir_if_exists(dir_temp)
-
-    # ------------------------------------------------------------------
-    # # info on how to run example app
-    # ------------------------------------------------------------------
-    debug_green('Run example app from Xcode. Project location: {0}/ios ...'.format(dir_app))
+    debug_green('Build successful! (You can also run it from Xcode ({0}/platforms/ios/)).'.format(example_app_dir))
+    remove_dir_if_exists(temp_plugin_dir)
 
 def build_and_run_test_app_android():
-    dir_app                 = '{0}/test/app'.format(dir_root)
-    dir_temp                = '{0}/temp'.format(dir_root)
-    dir_node_modules_sdk    = '{0}/node_modules/react-native-adjust'.format(dir_app)
-    dir_node_modules_oaid   = '{0}/node_modules/react-native-adjust-oaid'.format(dir_app)
-    dir_node_modules_test   = '{0}/node_modules/react-native-adjust-test'.format(dir_app)
+    # ------------------------------------------------------------------
+    # paths
+    # ------------------------------------------------------------------
+    test_app_dir        = '{0}/test/app'.format(dir_root)
+    test_plugin_dir     = '{0}/test/plugin'.format(dir_root)
+    scripts_dir         = '{0}/scripts'.format(dir_root)
+    plugin_temp_dir     = '{0}/temp_plugin'.format(dir_root)
+    sdk_plugin_package  = 'com.adjust.sdk'
+    test_plugin_package = 'com.adjust.test'
+    test_app_package    = 'com.adjust.examples'
 
     # ------------------------------------------------------------------
-    # uninstalling test app from device/emulator
+    # remove test app from test device
     # ------------------------------------------------------------------
-    debug_green('Uninstalling test app from device/emulator ...')
-    execute_command(['adb', 'uninstall', 'com.adjust.examples'])
+    debug_green('Removing test app package [{0}] from test device ...'.format(test_app_package))
+    adb_uninstall(test_app_package)
 
     # ------------------------------------------------------------------
-    # removing react-native-adjust and react-native-adjust-test from test app
+    # package plugin content to custom directory
     # ------------------------------------------------------------------
-    change_dir(dir_app)
-    debug_green('Removing react-native-adjust, react-native-adjust-oaid and react-native-adjust-test from test app ...')
-    execute_command(['yarn', 'remove', 'react-native-adjust'])
-    execute_command(['yarn', 'remove', 'react-native-adjust-oaid'])
-    execute_command(['yarn', 'remove', 'react-native-adjust-test'])
-    remove_dir_if_exists(dir_node_modules_sdk)
-    remove_dir_if_exists(dir_node_modules_oaid)
-    remove_dir_if_exists(dir_node_modules_test)
+    debug_green('Packaging plugin content to custom directory [{0}] ...'.format(plugin_temp_dir))
+    _recreate_plugin_temp_dir(plugin_temp_dir)
 
     # ------------------------------------------------------------------
-    # installing dependencies
+    # remove 'android' platform
     # ------------------------------------------------------------------
-    debug_green('Check for dependencies updates [yarn upgrade] ...')
-    execute_command(['yarn', 'upgrade'])
-    debug_green('Installing dependencies [yarn install] ...')
-    execute_command(['yarn', 'install'])
+    debug_green('Removing \'android\' platform in [{0}] ...'.format(test_app_dir))
+    change_dir(test_app_dir)
+    cordova_remove_platform('android')
 
     # ------------------------------------------------------------------
-    # copying react-native-adjust content to temp directory
+    # install 'android' platform
     # ------------------------------------------------------------------
-    debug_green('Copying react-native-adjust content to temp directory ...')
-    copy_content_to_temp_dir()
+    debug_green('Installing \'android\' platform in [{0}] ...'.format(test_app_dir))
+    cordova_add_platform('android')
 
     # ------------------------------------------------------------------
-    # adding react-native-adjust and react-native-adjust-test to test app
+    # re-install plugins to test app
     # ------------------------------------------------------------------
-    change_dir(dir_app)
-    debug_green('Adding react-native-adjust, react-native-adjust-oaid and react-native-adjust-test to test app ...')
-    execute_command(['yarn', 'add', '../../temp'])
-    execute_command(['yarn', 'add', '../../plugins/oaid'])
-    execute_command(['yarn', 'add', '../lib'])
-
-    # TODO: check if this is needed, seems it's not
-    #       error React Native CLI uses autolinking for native dependencies,
-    #       but the following modules are linked manually
-    # ------------------------------------------------------------------
-    # linking react-native-adjust
-    # ------------------------------------------------------------------
-    # debug_green('Linking react-native-adjust ...')
-    # execute_command(['react-native', 'link', 'react-native-adjust'])
+    debug_green('Re-installing plugins to test app ...')
+    cordova_remove_plugin(sdk_plugin_package)
+    cordova_remove_plugin(test_plugin_package)
+    cordova_add_plugin(plugin_temp_dir, options=['--verbose', '--nofetch'])
+    cordova_add_plugin(test_plugin_dir, options=['--verbose', '--nofetch'])
+    cordova_add_plugin('cordova-plugin-device', options=['--verbose'])
+    cordova_add_plugin('cordova-universal-links-plugin')
+    cordova_add_plugin('cordova-plugin-customurlscheme', options=['--variable', 'URL_SCHEME=adjust-test'])
 
     # ------------------------------------------------------------------
-    # cleaning up the temporary directory
+    # build Cordova test app project
     # ------------------------------------------------------------------
-    debug_green('Cleanup ...')
-    remove_dir_if_exists(dir_temp)
+    debug_green('Building Cordova test app project ...')
+    cordova_build('android', options=['--verbose'])
+    
+    # ------------------------------------------------------------------
+    # run Cordova test app
+    # ------------------------------------------------------------------
+    debug_green('Installing & running Cordova test app ...')
+    adb_install_apk('platforms/android/app/build/outputs/apk/debug/app-debug.apk')
+    adb_shell(test_app_package)
 
     # ------------------------------------------------------------------
-    # building and running test app on device/emulator
+    # clean up temporary stuff
     # ------------------------------------------------------------------
-    debug_green('Building and running test app on device/emulator ...')
-    execute_command(['react-native', 'run-android'])
+    debug_green('Cleaning up temporary directorie(s) ...')
+    remove_dir_if_exists(plugin_temp_dir)
 
 def build_and_run_test_app_ios():
-    dir_app                 = '{0}/test/app'.format(dir_root)
-    dir_temp                = '{0}/temp'.format(dir_root)
-    dir_node_modules_sdk    = '{0}/node_modules/react-native-adjust'.format(dir_app)
-    dir_node_modules_test   = '{0}/node_modules/react-native-adjust-test'.format(dir_app)
+    # ------------------------------------------------------------------
+    # paths
+    # ------------------------------------------------------------------
+    test_app_dir        = '{0}/test/app'.format(dir_root)
+    scripts_dir         = '{0}/scripts'.format(dir_root)
+    test_plugin_dir     = '{0}/test/plugin'.format(dir_root)
+    temp_plugin_dir     = '{0}/temp_plugin'.format(dir_root)
+    sdk_plugin_package  = 'com.adjust.sdk'
+    test_plugin_package = 'com.adjust.test'
+    test_app_package    = 'com.adjust.examples'
 
     # ------------------------------------------------------------------
-    # removing react-native-adjust and react-native-adjust-test from test app
+    # package plugin content to custom directory
     # ------------------------------------------------------------------
-    change_dir(dir_app)
-    debug_green('Removing react-native-adjust and react-native-adjust-test from test app ...')
-    execute_command(['yarn', 'remove', 'react-native-adjust'])
-    execute_command(['yarn', 'remove', 'react-native-adjust-test'])
-    remove_dir_if_exists(dir_node_modules_sdk)
-    remove_dir_if_exists(dir_node_modules_test)
+    debug_green('Packaging plugin content to custom directory [{0}] ...'.format(temp_plugin_dir))
+    _recreate_plugin_temp_dir(temp_plugin_dir)
 
     # ------------------------------------------------------------------
-    # installing dependencies
+    # remove 'android' platform from test app
     # ------------------------------------------------------------------
-    debug_green('Check for dependencies updates [yarn upgrade] ...')
-    execute_command(['yarn', 'upgrade'])
-    debug_green('Installing dependencies [yarn install] ...')
-    execute_command(['yarn', 'install'])
+    debug_green('Removing \'android\' platform from test app in [{0}] ...'.format(test_app_dir))
+    change_dir(test_app_dir)
+    cordova_remove_platform('ios')
 
     # ------------------------------------------------------------------
-    # copying react-native-adjust content to temp directory
+    # install 'android' platform to test app
     # ------------------------------------------------------------------
-    debug_green('Copying react-native-adjust content to temp directory ...')
-    copy_content_to_temp_dir()
+    debug_green('Installing \'android\' platform to test app in [{0}] ...'.format(test_app_dir))
+    cordova_add_platform('ios')
 
     # ------------------------------------------------------------------
-    # adding react-native-adjust and react-native-adjust-test to test app
+    # re-install plugins to test app
     # ------------------------------------------------------------------
-    change_dir(dir_app)
-    debug_green('Adding react-native-adjust and react-native-adjust-test to test app ...')
-    execute_command(['yarn', 'add', '../../temp'])
-    execute_command(['yarn', 'add', '../lib'])
-
-    # TODO: check if this is needed, seems it's not
-    #       error React Native CLI uses autolinking for native dependencies,
-    #       but the following modules are linked manually
-    # ------------------------------------------------------------------
-    # linking react-native-adjust
-    # ------------------------------------------------------------------
-    # debug_green('Linking react-native-adjust ...')
-    # execute_command(['react-native', 'link', 'react-native-adjust'])
+    debug_green('Re-installing plugins to test app ...')
+    cordova_remove_plugin(sdk_plugin_package)
+    cordova_remove_plugin(test_plugin_package)
+    cordova_add_plugin('cordova-plugin-customurlscheme', options=['--variable', 'URL_SCHEME=adjust-test'])
+    cordova_add_plugin(temp_plugin_dir, options=['--verbose', '--nofetch'])
+    cordova_add_plugin(test_plugin_dir, options=['--verbose', '--nofetch'])
 
     # ------------------------------------------------------------------
-    # update all the Pods if needed
+    # run test app
     # ------------------------------------------------------------------
-    change_dir('{0}/{1}'.format(dir_app, 'ios'))
-    execute_command(['pod', 'update'])
+    debug_green('Running Cordova test app project ...')
+    cordova_run('ios')
 
     # ------------------------------------------------------------------
-    # cleaning up the temporary directory
+    # build successful!
     # ------------------------------------------------------------------
-    debug_green('Cleanup ...')
-    remove_dir_if_exists(dir_temp)
+    debug_green('Build successful! (You can also run it from Xcode ({0}/platforms/ios/))'.format(test_app_dir))
+    remove_dir_if_exists(temp_plugin_dir)
 
-    # ------------------------------------------------------------------
-    # info on how to run test app
-    # ------------------------------------------------------------------
-    debug_green('Run test app from Xcode. Project location: {0}/ios ...'.format(dir_app))
-
-def copy_content_to_temp_dir():
-    dir_temp    = '{0}/temp'.format(dir_root)
-    dir_ios     = '{0}/ios'.format(dir_root)
-    dir_android = '{0}/android'.format(dir_root)
-
-    recreate_dir(dir_temp)
-    copy_dir_content(dir_android, dir_temp + '/android')
-    copy_dir_content(dir_ios, dir_temp + '/ios')
-    copy_file('{0}/package.json'.format(dir_root), '{0}/package.json'.format(dir_temp))
-    copy_file('{0}/react-native-adjust.podspec'.format(dir_root), '{0}/react-native-adjust.podspec'.format(dir_temp))
-    copy_file('{0}/index.js'.format(dir_root), '{0}/index.js'.format(dir_temp))
+def _recreate_plugin_temp_dir(plugin_temp_dir):
+    recreate_dir(plugin_temp_dir)
+    copy_dir_contents('{0}/www'.format(dir_root), '{0}/www'.format(plugin_temp_dir))
+    copy_dir_contents('{0}/src'.format(dir_root), '{0}/src'.format(plugin_temp_dir))
+    copy_file('{0}/package.json'.format(dir_root), '{0}/package.json'.format(plugin_temp_dir))
+    copy_file('{0}/plugin.xml'.format(dir_root), '{0}/plugin.xml'.format(plugin_temp_dir))

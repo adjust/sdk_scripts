@@ -9,7 +9,7 @@ from utils import *
 # ------------------------------------------------------------------
 # set script tag
 # ------------------------------------------------------------------
-set_log_tag('REACT-NATIVE-SDK')
+set_log_tag('CORDOVA-SDK')
 
 # ------------------------------------------------------------------
 # make sure script gets executed and not imported somewhere
@@ -22,23 +22,17 @@ if __name__ != "__main__":
 # usage message
 # ------------------------------------------------------------------
 usage_message = """List of potential commands that can be executed:
-                     react-native [action_type] [target_type] [platform] [build_mode]
-                     react-native build-native sdk android debug
-                     react-native build-native sdk android release
-                     react-native build-native sdk ios debug
-                     react-native build-native sdk ios release
-                     react-native build-native test-library android debug
-                     react-native build-native test-library android release
-                     react-native build-native test-library ios debug
-                     react-native build-native test-library ios release
-                     react-native build-native test-options android debug
-                     react-native build-native test-options android release
-                     react-native build-native plugin-oaid android debug
-                     react-native build-native plugin-oaid android release
-                     react-native run example-app android
-                     react-native run example-app ios
-                     react-native run test-app android
-                     react-native run test-app ios
+                     cordova [action_type] [target_type] [platform] [build_mode]
+                     cordova build-native test-library android debug
+                     cordova build-native test-library android release
+                     cordova build-native test-library ios debug
+                     cordova build-native test-library ios release
+                     cordova build-native test-options android debug
+                     cordova build-native test-options android release
+                     cordova run example-app android
+                     cordova run example-app ios
+                     cordova run test-app android
+                     cordova run test-app ios
                 """
 
 args_count = len(sys.argv)
@@ -69,7 +63,7 @@ if action_type != 'build-native' and action_type != 'run':
     error('Error. Invalid parameter [action_type] passed: {0}'.format(action_type))
     debug(usage_message)
     exit()
-if target_type != 'sdk' and target_type != 'test-library' and target_type != 'test-options' and target_type != 'example-app' and target_type != 'test-app' and target_type != 'plugin-oaid':
+if target_type != 'test-library' and target_type != 'test-options' and target_type != 'example-app' and target_type != 'test-app':
     error('Error. Invalid parameter [target_type] passed: {0}'.format(target_type))
     debug(usage_message)
     exit()
@@ -87,14 +81,10 @@ try:
     # build native binaries
     # ------------------------------------------------------------------
     if args_count == 5 and action_type == 'build-native':
-        if target_type == 'sdk':
-            natives.build_native_sdk(platform, build_mode)
-        elif target_type == 'test-library':
+        if target_type == 'test-library':
             natives.build_native_test_library(platform, build_mode)
         elif target_type == 'test-options':
             natives.build_native_test_options(platform, build_mode)
-        elif target_type == 'plugin-oaid':
-            natives.build_native_plugin_oaid(platform, build_mode)
     # ------------------------------------------------------------------
     # run example or test app
     # ------------------------------------------------------------------
@@ -102,16 +92,13 @@ try:
         if target_type == 'example-app':
             natives.build_native_sdk(platform)
             if platform == 'android':
-                natives.build_native_plugin_oaid(platform)
                 apps.build_and_run_example_app_android()
             elif platform == 'ios':
                 apps.build_and_run_example_app_ios()
         elif target_type == 'test-app':
-            natives.build_native_sdk(platform)
             natives.build_native_test_library(platform)
             natives.build_native_test_options(platform)
             if platform == 'android':
-                natives.build_native_plugin_oaid(platform)
                 apps.build_and_run_test_app_android()
             elif platform == 'ios':
                 apps.build_and_run_test_app_ios()
