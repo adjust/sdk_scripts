@@ -67,7 +67,7 @@ def build_and_run_example_app_android():
     # building and running example app on device/emulator
     # ------------------------------------------------------------------
     debug_green('Building and running example app on device/emulator ...')
-    execute_command(['react-native', 'run-android'])
+    execute_command(['npx', 'react-native', 'run-android'])
 
 def build_and_run_example_app_ios():
     dir_app                 = '{0}/example'.format(dir_root)
@@ -196,7 +196,7 @@ def build_and_run_test_app_android():
     # building and running test app on device/emulator
     # ------------------------------------------------------------------
     debug_green('Building and running test app on device/emulator ...')
-    execute_command(['react-native', 'run-android'])
+    execute_command(['npx', 'react-native', 'run-android'])
 
 def build_and_run_test_app_ios():
     dir_app                 = '{0}/test/app'.format(dir_root)
