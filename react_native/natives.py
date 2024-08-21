@@ -187,7 +187,7 @@ def build_native_sdk_ios():
     dir_src_out = '{0}/ios/Adjust'.format(dir_root)
 
     debug_green('Copying iOS SDK source files from {0} to {1} ...'.format(dir_src, dir_src_out))
-    copy_dir_content(dir_src, dir_src_out)
+#    copy_dir_content(dir_src, dir_src_out)
 
 # ------------------------------------------------------------------
 # build native iOS test library
