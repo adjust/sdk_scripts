@@ -7,9 +7,9 @@ dir_root = get_root_dir()
 # 'release' mode used by default if none specified
 # ------------------------------------------------------------------
 def build_native_sdk(platform, build_mode='release'):
-    if platform == 'android':
-        build_native_sdk_android(build_mode)
-    elif platform == 'ios':
+    # if platform == 'android':
+        # build_native_sdk_android(build_mode)
+    if platform == 'ios':
         build_native_sdk_ios()
 
 # ------------------------------------------------------------------
