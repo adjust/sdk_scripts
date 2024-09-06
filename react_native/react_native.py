@@ -93,8 +93,8 @@ try:
             natives.build_native_test_library(platform, build_mode)
         elif target_type == 'test-options':
             natives.build_native_test_options(platform, build_mode)
-        elif target_type == 'plugin-oaid':
-            natives.build_native_plugin_oaid(platform, build_mode)
+        # elif target_type == 'plugin-oaid':
+        #     natives.build_native_plugin_oaid(platform, build_mode)
     # ------------------------------------------------------------------
     # run example or test app
     # ------------------------------------------------------------------
@@ -102,7 +102,7 @@ try:
         if target_type == 'example-app':
             natives.build_native_sdk(platform)
             if platform == 'android':
-                natives.build_native_plugin_oaid(platform)
+                # natives.build_native_plugin_oaid(platform)
                 apps.build_and_run_example_app_android()
             elif platform == 'ios':
                 apps.build_and_run_example_app_ios()
@@ -111,7 +111,7 @@ try:
             natives.build_native_test_library(platform)
             natives.build_native_test_options(platform)
             if platform == 'android':
-                natives.build_native_plugin_oaid(platform)
+                # natives.build_native_plugin_oaid(platform)
                 apps.build_and_run_test_app_android()
             elif platform == 'ios':
                 apps.build_and_run_test_app_ios()
