@@ -38,10 +38,10 @@ def build_native_test_library_android(build_mode='debug'):
     # ------------------------------------------------------------------
     if build_mode == 'release':
         debug_green('Building native Android test library in release mode ...')
-        execute_command(['./gradlew', 'clean', ':test-library:adjustTestLibraryJarRelease'])
+        execute_command(['./gradlew', 'clean', ':tests:test-library:adjustTestLibraryJarRelease'])
     else:
         debug_green('Building native Android test library in debug mode ...')
-        execute_command(['./gradlew', 'clean', ':test-library:adjustTestLibraryJarDebug'])
+        execute_command(['./gradlew', 'clean', ':tests:test-library:adjustTestLibraryJarDebug'])
 
     # ------------------------------------------------------------------
     # move the built JAR to destination folder
@@ -71,10 +71,10 @@ def build_native_test_options_android(build_mode='debug'):
     # ------------------------------------------------------------------
     if build_mode == 'release':
         debug_green('Building native Android test options in release mode ...')
-        execute_command(['./gradlew', 'clean', ':test-options:assembleRelease'])
+        execute_command(['./gradlew', 'clean', ':tests:test-options:assembleRelease'])
     else:
         debug_green('Building native Android test options in debug mode ...')
-        execute_command(['./gradlew', 'clean', ':test-options:assembleDebug'])
+        execute_command(['./gradlew', 'clean', ':tests:test-options:assembleDebug'])
 
     # ------------------------------------------------------------------
     # move the built JAR to destination folder
