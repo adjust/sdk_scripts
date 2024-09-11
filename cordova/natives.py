@@ -98,7 +98,7 @@ def build_native_test_library_ios():
     dir_sdk                 = '{0}/ext/ios/sdk'.format(dir_root)
     dir_test_lib_project    = '{0}/AdjustTests/AdjustTestLibrary'.format(dir_sdk)
     dir_test_lib_dst        = '{0}/test/plugin/src/ios'.format(dir_root)
-    dir_frameworks          = '{0}/Frameworks/Static/'.format(dir_sdk)
+    dir_frameworks          = '{0}/sdk_distribution/test-static-framework'.format(dir_sdk)
 
     # ------------------------------------------------------------------
     # remove old test library framework
