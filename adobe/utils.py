@@ -195,8 +195,11 @@ def adobe_air_compc_sdk(root_dir, build_dir):
 
     execute_command([compc, '-source-path', dir_src, '-external-library-path', 
         file_swc, '-include-classes', 'com.adjust.sdk.Adjust', 'com.adjust.sdk.LogLevel', 'com.adjust.sdk.Environment',
-        'com.adjust.sdk.UrlStrategy', 'com.adjust.sdk.AdjustConfig', 'com.adjust.sdk.AdjustAttribution', 'com.adjust.sdk.AdjustEventSuccess',
+        'com.adjust.sdk.AdjustConfig', 'com.adjust.sdk.AdjustAttribution', 'com.adjust.sdk.AdjustEventSuccess',
         'com.adjust.sdk.AdjustEventFailure', 'com.adjust.sdk.AdjustEvent', 'com.adjust.sdk.AdjustSessionSuccess',
+        'com.adjust.sdk.AdjustAdRevenue', 'com.adjust.sdk.AdjustAppStorePurchase', 'com.adjust.sdk.AdjustAppStoreSubscription',
+        'com.adjust.sdk.AdjustDeeplink', 'com.adjust.sdk.AdjustPlayStorePurchase', 'com.adjust.sdk.AdjustPlayStoreSubscription',
+        'com.adjust.sdk.AdjustPurchaseVerificationResult', 'com.adjust.sdk.AdjustThirdPartySharing',
         'com.adjust.sdk.AdjustSessionFailure', 'com.adjust.sdk.AdjustTestOptions', '-directory=true', '-output', dir_output])
 
 # Run 'compc' command for SDK test library.
@@ -219,8 +222,11 @@ def adobe_air_compc_swc_sdk(root_dir, build_dir):
 
     execute_command([compc, '-source-path', src_dir, '-external-library-path', 
         external_lib_path, '-include-classes', 'com.adjust.sdk.Adjust', 'com.adjust.sdk.LogLevel', 'com.adjust.sdk.Environment',
-        'com.adjust.sdk.UrlStrategy', 'com.adjust.sdk.AdjustConfig', 'com.adjust.sdk.AdjustAttribution', 'com.adjust.sdk.AdjustEventSuccess',
+        'com.adjust.sdk.AdjustConfig', 'com.adjust.sdk.AdjustAttribution', 'com.adjust.sdk.AdjustEventSuccess',
         'com.adjust.sdk.AdjustEventFailure', 'com.adjust.sdk.AdjustEvent', 'com.adjust.sdk.AdjustSessionSuccess',
+        'com.adjust.sdk.AdjustAdRevenue', 'com.adjust.sdk.AdjustAppStorePurchase', 'com.adjust.sdk.AdjustAppStoreSubscription',
+        'com.adjust.sdk.AdjustDeeplink', 'com.adjust.sdk.AdjustPlayStorePurchase', 'com.adjust.sdk.AdjustPlayStoreSubscription',
+        'com.adjust.sdk.AdjustPurchaseVerificationResult', 'com.adjust.sdk.AdjustThirdPartySharing',
         'com.adjust.sdk.AdjustSessionFailure', 'com.adjust.sdk.AdjustTestOptions', '-output', '{0}/Adjust.swc'.format(build_dir)])
 
 # Run 'compc' command to build .swc file for SDK test library.
@@ -239,8 +245,8 @@ def adobe_air_adt_sdk(version):
     adt           = '{0}/bin/adt'.format(air_sdk_path)
     
     execute_command([adt, '-package', '-target', 'ane', '../Adjust-{0}.ane'.format(version), 'extension.xml', '-swc', 'Adjust.swc', 
-        '-platform', 'Android-ARM', '-C', 'Android', '.',
-        '-platform', 'Android-ARM64', '-C', 'Android64', '.',
+        '-platform', 'Android-ARM', '-C', 'Android', '.', '-platformoptions', 'Android/platformoptions_android.xml',
+        '-platform', 'Android-ARM64', '-C', 'Android64', '.', '-platformoptions', 'Android/platformoptions_android.xml',
         '-platform', 'Android-x86', '-C', 'Android-x86', '.',
         '-platform', 'iPhone-ARM', '-C', 'iOS', '.', '-platformoptions', 'iOS/platformoptions_ios.xml',
         '-platform', 'iPhone-x86', '-C', 'iOS-x86', '.',

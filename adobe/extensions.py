@@ -36,7 +36,8 @@ def build_extension_sdk_android(build_mode='release'):
     dir_bld_extension   = '{0}/src/AdjustExtension'.format(dir_ext)
     dir_src_extension   = '{0}/src/AdjustExtension/extension/src/main/java/com/adjust/sdk'.format(dir_ext)
     dir_src_sdk         = '{0}/sdk/Adjust/sdk-core/src/main/java/com/adjust/sdk'.format(dir_ext)
-    dir_src_jar         = '{0}/src/AdjustExtension/extension/build/libs/{1}'.format(dir_ext, build_mode)
+    # dir_src_jar         = '{0}/src/AdjustExtension/extension/build/libs/{1}'.format(dir_ext, build_mode)
+    dir_src_jar         = '{0}/extension/build/intermediates/aar_main_jar/{1}/sync{2}LibJars'.format(dir_bld_extension, build_mode, build_mode.capitalize())
 
     # Update Android extension souce files from SDK extension directory.
     debug_green('Update all Android SDK source files in the extension source directory ...')
@@ -59,7 +60,7 @@ def build_extension_sdk_android(build_mode='release'):
 
     # Copy generated Android extension JAR to it's destination directory.
     debug_green('Copying generated adjust-android.jar from {0} to {1} ...'.format(dir_src_jar, dir_ext))
-    copy_file('{0}/adjust-android.jar'.format(dir_src_jar), '{0}/adjust-android.jar'.format(dir_ext))
+    copy_file('{0}/classes.jar'.format(dir_src_jar), '{0}/adjust-android.jar'.format(dir_ext))
 
 # Build Adobe AIR SDK test library Android extension JAR in debug mode.
 def build_extension_test_android_debug():
@@ -71,11 +72,13 @@ def build_extension_test_android_release():
 
 # Build Adobe AIR SDK test library Android extension JAR.
 def build_extension_test_android(build_mode='release'):
-    dir_plugin          = '{0}/test/plugin/android'.format(dir_root)
-    dir_bld_extension   = '{0}/src/AdjustTestExtension'.format(dir_plugin)
-    dir_src_extension   = '{0}/extension/src/main/java/com/adjust/test'.format(dir_bld_extension)
-    dir_src_test        = '{0}/ext/android/sdk/Adjust/test-library/src/main/java/com/adjust/test'.format(dir_root)
-    dir_src_jar         = '{0}/extension/build/libs/{1}'.format(dir_bld_extension, build_mode)
+    dir_plugin              = '{0}/test/plugin/android'.format(dir_root)
+    dir_bld_extension       = '{0}/src/AdjustTestExtension'.format(dir_plugin)
+    dir_src_extension       = '{0}/extension/src/main/java/com/adjust/test'.format(dir_bld_extension)
+    dir_src_test            = '{0}/ext/android/sdk/Adjust/tests/test-library/src/main/java/com/adjust/test'.format(dir_root)
+    dir_src_jar             = '{0}/extension/build/intermediates/aar_main_jar/{1}/sync{2}LibJars'.format(dir_bld_extension, build_mode, build_mode.capitalize())
+    # dir_src_jar             = '{0}/extension/build/intermediates/aar_main_jar/{1}/syncDebugLibJars'.format(dir_bld_extension, build_mode)
+    dir_src_test_options    = '{0}/ext/android/sdk/Adjust/tests/test-options/build/intermediates/aar_main_jar/{1}'.format(dir_root, build_mode)
 
     # Update Android test extension souce files from SDK extension directory.
     debug_green('Update all Android SDK test library source files in the extension source directory ...')
@@ -88,6 +91,21 @@ def build_extension_test_android(build_mode='release'):
     clean_dir('*', dir_src_extension, excluded_files)
     copy_dir_content(dir_src_test, dir_src_extension)
 
+    # Build test options and copy the resulting JAR to its destination directory.
+    change_dir('{0}/ext/android/sdk/Adjust'.format(dir_root))
+    if build_mode == 'release':
+        debug_green('Building native Android test options in release mode ...')
+        execute_command(['./gradlew', 'clean', ':tests:test-options:assembleRelease'])
+    else:
+        debug_green('Building native Android test options in debug mode ...')
+        execute_command(['./gradlew', 'clean', ':tests:test-options:assembleDebug'])
+
+    debug_green('Copy native Android test options JAR from {0} to {1} dir ...'.format(dir_src_test_options, dir_bld_extension))
+    if build_mode == 'release':
+        copy_file('{0}/classes.jar'.format(dir_src_test_options), '{0}/extension/libs/adjust-android-test-options.jar'.format(dir_bld_extension))
+    else:
+        copy_file('{0}/classes.jar'.format(dir_src_test_options), '{0}/extension/libs/adjust-android-test-options.jar'.format(dir_bld_extension))
+
     # Build Android test extension JAR.
     debug_green('Building adjust-android-test.jar of the Android test extension ...')
     change_dir(dir_bld_extension)
@@ -96,9 +114,10 @@ def build_extension_test_android(build_mode='release'):
     else:
         execute_command(['./gradlew', 'clean', 'makeDebugJar'])
 
-    # Copy generated Android test extension JAR to it's destination directory.
+    # Copy generated Android fat test and test options JARs to their destination directory.
     debug_green('Copying generated adjust-android-test.jar from {0} to {1} ...'.format(dir_src_jar, dir_plugin))
-    copy_file('{0}/adjust-android-test.jar'.format(dir_src_jar), '{0}/adjust-android-test.jar'.format(dir_plugin))
+    copy_file('{0}/classes.jar'.format(dir_src_jar), '{0}/adjust-android-test.jar'.format(dir_plugin))
+    copy_file('{0}/extension/libs/adjust-android-test-options.jar'.format(dir_bld_extension), '{0}/adjust-android-test-options.jar'.format(dir_plugin))
 
 # ------------------------------------------------------------------
 # iOS interface.
