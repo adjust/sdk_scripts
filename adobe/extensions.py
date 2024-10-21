@@ -143,11 +143,12 @@ def build_extension_sdk_ios(build_mode='release'):
     # Rebuild static AdjustSdk.framework.
     debug_green('Rebuilding static AdjustSdk.framework in {0} mode ...'.format(build_mode))
     change_dir(dir_sdk)
-    xcode_rebuild('AdjustStatic', build_mode.capitalize())
+    # xcode_rebuild('AdjustStatic', build_mode.capitalize())
+    execute_command(['./scripts/build_frameworks.sh', '-fs', '-ios'])
 
     # Copy static AdjustSdk.framework to it's destination.
-    copy_dir_content('{0}/Frameworks/Static/AdjustSdk.framework'.format(dir_sdk), '{0}/include/Adjust/AdjustSdk.framework'.format(dir_src_extension))
-    copy_dir_content('{0}/Frameworks/Static/AdjustSdk.framework'.format(dir_sdk), '{0}/AdjustSdk.framework'.format(dir_ext))
+    copy_dir_content('{0}/sdk_distribution/frameworks-static/AdjustSdk-iOS-Static/AdjustSdk.framework'.format(dir_sdk), '{0}/include/Adjust/AdjustSdk.framework'.format(dir_src_extension))
+    copy_dir_content('{0}/sdk_distribution/frameworks-static/AdjustSdk-iOS-Static/AdjustSdk.framework'.format(dir_sdk), '{0}/AdjustSdk.framework'.format(dir_ext))
 
     # Build iOS extension .a library.
     debug_green('Building Adobe AIR iOS SDK extension .a library and outputing it to {0} ...'.format(dir_ext))
@@ -168,7 +169,8 @@ def build_extension_test_ios(build_mode='release'):
     dir_ext             = '{0}/ext/ios'.format(dir_root)
     dir_src_extension   = '{0}/test/plugin/ios/src/AdjustTestExtension'.format(dir_root)
     dir_test_lib        = '{0}/sdk/AdjustTests/AdjustTestLibrary'.format(dir_ext)
-    dir_frameworks      = '{0}/sdk/Frameworks/Static'.format(dir_ext)
+    # dir_frameworks      = '{0}/sdk/Frameworks/Static'.format(dir_ext)
+    dir_frameworks      = '{0}/sdk/sdk_distribution/test-static-framework'.format(dir_ext)
 
     # Remove static AdjustTestLibrary.framework.
     debug_green('Removing existing static AdjustTestLibrary.framework ...')
