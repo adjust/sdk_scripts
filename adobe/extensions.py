@@ -36,8 +36,8 @@ def build_extension_sdk_android(build_mode='release'):
     dir_bld_extension   = '{0}/src/AdjustExtension'.format(dir_ext)
     dir_src_extension   = '{0}/src/AdjustExtension/extension/src/main/java/com/adjust/sdk'.format(dir_ext)
     dir_src_sdk         = '{0}/sdk/Adjust/sdk-core/src/main/java/com/adjust/sdk'.format(dir_ext)
-    # dir_src_jar         = '{0}/src/AdjustExtension/extension/build/libs/{1}'.format(dir_ext, build_mode)
-    dir_src_jar         = '{0}/extension/build/intermediates/aar_main_jar/{1}/sync{2}LibJars'.format(dir_bld_extension, build_mode, build_mode.capitalize())
+    dir_src_aar         = '{0}/src/AdjustExtension/extension/build/outputs/aar'.format(dir_ext)
+    # dir_src_jar         = '{0}/extension/build/intermediates/aar_main_jar/{1}/sync{2}LibJars'.format(dir_bld_extension, build_mode, build_mode.capitalize())
 
     # Update Android extension souce files from SDK extension directory.
     debug_green('Update all Android SDK source files in the extension source directory ...')
@@ -54,13 +54,13 @@ def build_extension_sdk_android(build_mode='release'):
     debug_green('Building adjust-android.jar of the Android extension ...')
     change_dir(dir_bld_extension)
     if build_mode == 'release':
-        execute_command(['./gradlew', 'clean', 'makeReleaseJar'])
+        execute_command(['./gradlew', 'clean', 'assembleRelease'])
     else:
-        execute_command(['./gradlew', 'clean', 'makeDebugJar'])
+        execute_command(['./gradlew', 'clean', 'assembleDebug'])
 
-    # Copy generated Android extension JAR to it's destination directory.
-    debug_green('Copying generated adjust-android.jar from {0} to {1} ...'.format(dir_src_jar, dir_ext))
-    copy_file('{0}/classes.jar'.format(dir_src_jar), '{0}/adjust-android.jar'.format(dir_ext))
+    # Copy generated Android extension AAR to it's destination directory.
+    debug_green('Copying generated extension AAR from {0} to {1} ...'.format(dir_src_aar, dir_ext))
+    copy_file('{0}/extension-{1}.aar'.format(dir_src_aar, build_mode), '{0}/adjust-android.aar'.format(dir_ext))
 
 # Build Adobe AIR SDK test library Android extension JAR in debug mode.
 def build_extension_test_android_debug():
