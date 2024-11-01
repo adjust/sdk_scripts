@@ -45,12 +45,14 @@ def build_ane_sdk():
     copy_file('{0}/adjust-signature.aar'.format(dir_ext_android), '{0}/Android64/adjust-signature.aar'.format(dir_build))
     copy_file('{0}/libAdjustExtension.a'.format(dir_ext_ios), '{0}/iOS/libAdjustExtension.a'.format(dir_build))
     copy_dir_content('{0}/AdjustSdk.framework'.format(dir_ext_ios), '{0}/iOS/AdjustSdk.framework'.format(dir_build))
-    copy_dir_content('{0}/AdjustSigSdk.framework'.format(dir_ext_ios), '{0}/iOS/AdjustSigSdk.framework'.format(dir_build))
+    # copy_dir_content('{0}/AdjustSigSdk.framework'.format(dir_ext_ios), '{0}/iOS/AdjustSigSdk.framework'.format(dir_build))
+    copy_file('{0}/AdjustSigSdk.a'.format(dir_ext_ios), '{0}/iOS/AdjustSigSdk.a'.format(dir_build))
     copy_file('{0}/adjust-android.aar'.format(dir_ext_android), '{0}/Android-x86/adjust-android.aar'.format(dir_build))
     copy_file('{0}/adjust-signature.aar'.format(dir_ext_android), '{0}/Android-x86/adjust-signature.aar'.format(dir_build))
     copy_file('{0}/libAdjustExtension.a'.format(dir_ext_ios), '{0}/iOS-x86/libAdjustExtension.a'.format(dir_build))
     copy_dir_content('{0}/AdjustSdk.framework'.format(dir_ext_ios), '{0}/iOS-x86/AdjustSdk.framework'.format(dir_build))
-    copy_dir_content('{0}/AdjustSigSdk.framework'.format(dir_ext_ios), '{0}/iOS-x86/AdjustSigSdk.framework'.format(dir_build))
+    # copy_dir_content('{0}/AdjustSigSdk.framework'.format(dir_ext_ios), '{0}/iOS-x86/AdjustSigSdk.framework'.format(dir_build))
+    copy_file('{0}/AdjustSigSdk.a'.format(dir_ext_ios), '{0}/iOS-x86/AdjustSigSdk.a'.format(dir_build))
 
     # Generate .swc file.
     debug_green('Making SWC file ...')

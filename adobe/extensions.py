@@ -146,7 +146,31 @@ def build_extension_sdk_ios(build_mode='release'):
     # xcode_rebuild('AdjustStatic', build_mode.capitalize())
     execute_command(['./scripts/build_frameworks.sh', '-fs', '-ios'])
 
+    # Remove symlinks from AdjustSdk.framework
+    debug_green('Removing symlinks from static AdjustSdk.framework ...')
+    execute_command([
+        'rm',
+        '-rf',
+        '{0}/sdk_distribution/frameworks-static/AdjustSdk-iOS-Static/AdjustSdk.framework/AdjustSdk'.format(dir_sdk)])
+    execute_command([
+        'rm',
+        '-rf',
+        '{0}/sdk_distribution/frameworks-static/AdjustSdk-iOS-Static/AdjustSdk.framework/Headers'.format(dir_sdk)])
+    execute_command([
+        'mv',
+        '{0}/sdk_distribution/frameworks-static/AdjustSdk-iOS-Static/AdjustSdk.framework/Versions/A/Headers'.format(dir_sdk),
+        '{0}/sdk_distribution/frameworks-static/AdjustSdk-iOS-Static/AdjustSdk.framework/Headers'.format(dir_sdk)])
+    execute_command([
+        'mv',
+        '{0}/sdk_distribution/frameworks-static/AdjustSdk-iOS-Static/AdjustSdk.framework/Versions/A/AdjustSdk'.format(dir_sdk),
+        '{0}/sdk_distribution/frameworks-static/AdjustSdk-iOS-Static/AdjustSdk.framework/AdjustSdk'.format(dir_sdk)])
+    execute_command([
+        'rm',
+        '-rf',
+        '{0}/sdk_distribution/frameworks-static/AdjustSdk-iOS-Static/AdjustSdk.framework/Versions'.format(dir_sdk)])
+
     # Copy static AdjustSdk.framework to it's destination.
+    debug_green('Copying static AdjustSdk.framework to destinations ...')
     copy_dir_content('{0}/sdk_distribution/frameworks-static/AdjustSdk-iOS-Static/AdjustSdk.framework'.format(dir_sdk), '{0}/include/Adjust/AdjustSdk.framework'.format(dir_src_extension))
     copy_dir_content('{0}/sdk_distribution/frameworks-static/AdjustSdk-iOS-Static/AdjustSdk.framework'.format(dir_sdk), '{0}/AdjustSdk.framework'.format(dir_ext))
 
