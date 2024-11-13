@@ -194,7 +194,7 @@ def adobe_air_compc_sdk(root_dir, build_dir):
     dir_output      = '{0}/default'.format(build_dir)
 
     execute_command([compc, '-source-path', dir_src, '-external-library-path', 
-        file_swc, '-include-classes', 'com.adjust.sdk.Adjust', 'com.adjust.sdk.LogLevel', 'com.adjust.sdk.Environment',
+        file_swc, '-include-classes', 'com.adjust.sdk.Adjust', 'com.adjust.sdk.AdjustLogLevel', 'com.adjust.sdk.AdjustEnvironment',
         'com.adjust.sdk.AdjustConfig', 'com.adjust.sdk.AdjustAttribution', 'com.adjust.sdk.AdjustEventSuccess',
         'com.adjust.sdk.AdjustEventFailure', 'com.adjust.sdk.AdjustEvent', 'com.adjust.sdk.AdjustSessionSuccess',
         'com.adjust.sdk.AdjustAdRevenue', 'com.adjust.sdk.AdjustAppStorePurchase', 'com.adjust.sdk.AdjustAppStoreSubscription',
@@ -221,7 +221,7 @@ def adobe_air_compc_swc_sdk(root_dir, build_dir):
     external_lib_path = '{0}/frameworks/libs/air/airglobal.swc'.format(air_sdk_path)
 
     execute_command([compc, '-source-path', src_dir, '-external-library-path', 
-        external_lib_path, '-include-classes', 'com.adjust.sdk.Adjust', 'com.adjust.sdk.LogLevel', 'com.adjust.sdk.Environment',
+        external_lib_path, '-include-classes', 'com.adjust.sdk.Adjust', 'com.adjust.sdk.AdjustLogLevel', 'com.adjust.sdk.AdjustEnvironment',
         'com.adjust.sdk.AdjustConfig', 'com.adjust.sdk.AdjustAttribution', 'com.adjust.sdk.AdjustEventSuccess',
         'com.adjust.sdk.AdjustEventFailure', 'com.adjust.sdk.AdjustEvent', 'com.adjust.sdk.AdjustSessionSuccess',
         'com.adjust.sdk.AdjustAdRevenue', 'com.adjust.sdk.AdjustAppStorePurchase', 'com.adjust.sdk.AdjustAppStoreSubscription',
