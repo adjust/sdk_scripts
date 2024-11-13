@@ -50,8 +50,8 @@ def build_extension_sdk_android(build_mode='release'):
     clean_dir('*', dir_src_extension, excluded_files)
     copy_dir_content(dir_src_sdk, dir_src_extension)
 
-    # Build Android extension JAR.
-    debug_green('Building adjust-android.jar of the Android extension ...')
+    # Build Android extension AAR.
+    debug_green('Building adjust-android.aar of the Android extension ...')
     change_dir(dir_bld_extension)
     if build_mode == 'release':
         execute_command(['./gradlew', 'clean', 'assembleRelease'])
