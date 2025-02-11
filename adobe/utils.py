@@ -247,7 +247,7 @@ def adobe_air_adt_sdk(version):
     execute_command([adt, '-package', '-target', 'ane', '../Adjust-{0}.ane'.format(version), 'extension.xml', '-swc', 'Adjust.swc', 
         '-platform', 'Android-ARM', '-C', 'Android', '.', '-platformoptions', 'Android/platformoptions_android.xml',
         '-platform', 'Android-ARM64', '-C', 'Android64', '.', '-platformoptions', 'Android/platformoptions_android.xml',
-        '-platform', 'Android-x86', '-C', 'Android-x86', '.',
+        '-platform', 'Android-x86', '-C', 'Android-x86', '.', '-platformoptions', 'Android/platformoptions_android.xml',
         '-platform', 'iPhone-ARM', '-C', 'iOS', '.', '-platformoptions', 'iOS/platformoptions_ios.xml',
         '-platform', 'iPhone-x86', '-C', 'iOS-x86', '.',
         '-platform', 'default', '-C', 'default', '.'])
@@ -285,7 +285,8 @@ def adobe_air_make_sample_cert():
 # Package Adobe AIR app APK file.
 def adobe_air_package_apk_file():
     debug_blue('Packaging APK file, please wait ...')
-    command = 'adt -package -target apk-debug -arch armv8 -storetype pkcs12 -keystore sampleCert.pfx Main.apk Main-app.xml Main.swf -extdir lib'
+    # command = 'adt -package -target apk-debug -arch armv8 -storetype pkcs12 -keystore sampleCert.pfx Main.apk Main-app.xml Main.swf -extdir lib'
+    command = 'adt -package -target apk-debug -storetype pkcs12 -keystore sampleCert.pfx Main.apk Main-app.xml Main.swf -extdir lib'
     debug_blue('Executing: [{0}] ...'.format(command))
     os.system('echo pass|{0}'.format(command))
     debug_blue('Packaging APK file done.')
