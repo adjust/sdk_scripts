@@ -107,7 +107,7 @@ try:
             elif platform == 'ios':
                 apps.build_and_run_example_app_ios()
         elif target_type == 'test-app':
-            natives.build_native_sdk(platform)
+            # natives.build_native_sdk(platform)
             natives.build_native_test_library(platform)
             natives.build_native_test_options(platform)
             if platform == 'android':
