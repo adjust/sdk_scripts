@@ -28,7 +28,7 @@ def build_native_test_library_android(build_mode='debug'):
     dir_ext     = '{0}/ext/android'.format(dir_root)
     dir_sdk     = '{0}/ext/android/sdk'.format(dir_root)
     dir_build   = '{0}/Adjust'.format(dir_sdk)
-    dir_jar_src  = '{0}/test-library/build/libs'.format(dir_build)
+    dir_jar_src = '{0}/tests/test-library/build/intermediates/aar_main_jar/{1}/sync{2}LibJars'.format(dir_build, build_mode, build_mode.capitalize())
     dir_jar_dst = '{0}/test/plugin/src/android'.format(dir_root)
 
     os.chdir(dir_build)
@@ -38,21 +38,17 @@ def build_native_test_library_android(build_mode='debug'):
     # ------------------------------------------------------------------
     if build_mode == 'release':
         debug_green('Building native Android test library in release mode ...')
-        execute_command(['./gradlew', 'clean', ':tests:test-library:adjustTestLibraryJarRelease'])
+        execute_command(['./gradlew', 'clean', ':tests:test-library:assembleRelease'])
     else:
         debug_green('Building native Android test library in debug mode ...')
-        execute_command(['./gradlew', 'clean', ':tests:test-library:adjustTestLibraryJarDebug'])
+        execute_command(['./gradlew', 'clean', ':tests:test-library:assembleDebug'])
 
     # ------------------------------------------------------------------
     # move the built JAR to destination folder
     # ------------------------------------------------------------------
     debug_green('Moving native Android test library JAR from {0} to {1} dir ...'.format(dir_jar_src, dir_jar_dst))
-    if build_mode == 'release':
-        copy_files('test-library-release.jar', dir_jar_src, dir_jar_dst)
-        rename_file('test-library-release.jar', 'adjust-test-library.jar', dir_jar_dst)
-    else:
-        copy_files('test-library-debug.jar', dir_jar_src, dir_jar_dst)
-        rename_file('test-library-debug.jar', 'adjust-test-library.jar', dir_jar_dst)
+    copy_files('classes.jar', dir_jar_src, dir_jar_dst)
+    rename_file('classes.jar', 'adjust-test-library.jar', dir_jar_dst)
 
 # ------------------------------------------------------------------
 # build native Android test options
@@ -61,7 +57,7 @@ def build_native_test_options_android(build_mode='debug'):
     dir_ext     = '{0}/ext/android'.format(dir_root)
     dir_sdk     = '{0}/ext/android/sdk'.format(dir_root)
     dir_build   = '{0}/Adjust'.format(dir_sdk)
-    dir_jar_src = '{0}/test-options/build/intermediates/aar_main_jar/{1}'.format(dir_build, build_mode)
+    dir_jar_src = '{0}/tests/test-options/build/intermediates/aar_main_jar/{1}/sync{2}LibJars'.format(dir_build, build_mode, build_mode.capitalize())
     dir_jar_dst = '{0}/test/plugin/src/android'.format(dir_root)
 
     os.chdir(dir_build)
@@ -83,12 +79,8 @@ def build_native_test_options_android(build_mode='debug'):
     # skipping cleaning of folder for now since it will wipe out adjust-test-library.jar
     # TODO: find nicer way to do this
     # clear_dir(dir_jar_dst)
-    if build_mode == 'release':
-        copy_files('classes.jar', dir_jar_src, dir_jar_dst)
-        rename_file('classes.jar', 'adjust-test-options.jar', dir_jar_dst)
-    else:
-        copy_files('classes.jar', dir_jar_src, dir_jar_dst)
-        rename_file('classes.jar', 'adjust-test-options.jar', dir_jar_dst)
+    copy_files('classes.jar', dir_jar_src, dir_jar_dst)
+    rename_file('classes.jar', 'adjust-test-options.jar', dir_jar_dst)
 
 # ------------------------------------------------------------------
 # build native iOS test library
