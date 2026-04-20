@@ -2,7 +2,6 @@
 ##  Various util python methods which can be utilized and shared among different scripts
 ##
 import os, shutil, glob, time, sys, platform, subprocess
-from distutils.dir_util import copy_tree
 
 def set_log_tag(t):
     global TAG
@@ -103,7 +102,17 @@ def copy_files(fileNamePattern, sourceDir, destDir):
         shutil.copy(file, destDir)
 
 def copy_dir_content(sourceDir, destDir):
-    copy_tree(sourceDir, destDir)
+    if not os.path.exists(destDir):
+        os.makedirs(destDir)
+
+    for item in os.listdir(sourceDir):
+        source_path = os.path.join(sourceDir, item)
+        dest_path = os.path.join(destDir, item)
+
+        if os.path.isdir(source_path):
+            shutil.copytree(source_path, dest_path, dirs_exist_ok=True)
+        else:
+            shutil.copy2(source_path, dest_path)
 
 def remove_files(fileNamePattern, sourceDir, log=True):
     for file in glob.glob(sourceDir + '/' + fileNamePattern):
