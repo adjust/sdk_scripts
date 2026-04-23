@@ -109,9 +109,7 @@ finally:
     # ------------------------------------------------------------------
     # remove autocreated Python compiled files
     # ------------------------------------------------------------------
-    remove_files_with_pattern('*.pyc', get_scripts_dir())
-    # ------------------------------------------------------------------
-    # TODO: figure out proper way to remove __pycache__ directory
-    # ------------------------------------------------------------------
-    remove_dir_if_exists('__pycache__')
+    scripts_dir = get_scripts_dir()
+    remove_files_with_pattern('*.pyc', scripts_dir)
+    remove_dir_if_exists(os.path.join(scripts_dir, '__pycache__'))
     debug_green('Script completed!')
