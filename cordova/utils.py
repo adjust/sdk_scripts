@@ -3,7 +3,6 @@
 ## TODO: clean up this file and reuse it among all scripts inside of the sdk_scripts repo
 ##
 import os, shutil, glob, time, sys, platform, subprocess
-from distutils.dir_util import copy_tree
 
 def set_log_tag(t):
     global TAG
@@ -104,7 +103,7 @@ def copy_files(fileNamePattern, sourceDir, destDir):
         shutil.copy(file, destDir)
 
 def copy_dir_content(sourceDir, destDir):
-    copy_tree(sourceDir, destDir)
+    shutil.copytree(sourceDir, destDir, dirs_exist_ok=True)
 
 def remove_files(fileNamePattern, sourceDir, log=True):
     for file in glob.glob(sourceDir + '/' + fileNamePattern):
