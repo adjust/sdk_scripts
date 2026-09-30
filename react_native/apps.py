@@ -266,10 +266,12 @@ def copy_content_to_temp_dir():
     dir_temp    = '{0}/temp'.format(dir_root)
     dir_ios     = '{0}/ios'.format(dir_root)
     dir_android = '{0}/android'.format(dir_root)
+    dir_scripts = '{0}/scripts'.format(dir_root)
 
     recreate_dir(dir_temp)
     copy_dir_content(dir_android, dir_temp + '/android')
     copy_dir_content(dir_ios, dir_temp + '/ios')
+    copy_dir_content(dir_scripts, dir_temp + '/scripts')
     copy_file('{0}/package.json'.format(dir_root), '{0}/package.json'.format(dir_temp))
     copy_file('{0}/react-native-adjust.podspec'.format(dir_root), '{0}/react-native-adjust.podspec'.format(dir_temp))
     copy_file('{0}/index.js'.format(dir_root), '{0}/index.js'.format(dir_temp))
