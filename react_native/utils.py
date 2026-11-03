@@ -24,9 +24,14 @@ def run(cmd, allow_failure=False):
     else:
         subprocess.check_call(cmd)
 
+def output(cmd):
+    return subprocess.check_output(cmd, text=True).strip()
+
 def run_background(cmd, cwd, log_path):
     _log(f'{" ".join(cmd)} (background, log: {log_path})', BLUE)
-    subprocess.Popen(cmd, cwd=cwd, stdout=open(log_path, 'w'), stderr=subprocess.STDOUT, start_new_session=True)
+    # fully detach from the terminal; with an inherited stdin, interactive tools like Metro keep
+    # reading keystrokes from the tab and leave it unusable after the script exits
+    subprocess.Popen(cmd, cwd=cwd, stdin=subprocess.DEVNULL, stdout=open(log_path, 'w'), stderr=subprocess.STDOUT, start_new_session=True)
 
 # this file lives in <root>/ext/scripts/<platform>/, so <root> is three levels up
 def root_dir():

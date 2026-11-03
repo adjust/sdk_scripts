@@ -2,7 +2,7 @@
 import sys
 sys.dont_write_bytecode = True
 
-import argparse, subprocess
+import argparse, os, shutil, subprocess
 from utils import *
 
 set_log_tag('REACT-NATIVE-SDK')
@@ -66,9 +66,33 @@ def assemble_package():
 def start_metro(app_dir):
     # run Metro ourselves, otherwise the CLI opens a terminal window for it on every single run
     run(['sh', '-c', 'lsof -ti tcp:8081 | xargs kill'], allow_failure=True)
-    run_background(['npx', 'react-native', 'start'], app_dir, METRO_LOG)
+    run_background(['npx', 'react-native', 'start', '--no-interactive'], app_dir, METRO_LOG)
     info('Waiting for Metro ...')
     run(['sh', '-c', 'for i in $(seq 30); do lsof -ti tcp:8081 >/dev/null && exit 0; sleep 1; done; exit 1'])
+
+
+def check_setup(target, platform):
+    app_dir = APPS[target]['dir']
+    tools = [('node', 'install Node via nvm: https://github.com/nvm-sh/nvm'),
+             ('yarn', 'npm install -g yarn')]
+    if platform == 'android':
+        tools.append(('adb', 'install Android SDK platform-tools and add them to PATH'))
+    else:
+        tools.append(('pod', 'sudo gem install cocoapods'))
+    problems = [f'{tool} not found in PATH. Fix: {fix}' for tool, fix in tools if shutil.which(tool) is None]
+
+    nvmrc = f'{app_dir}/.nvmrc'
+    if shutil.which('node') and os.path.isfile(nvmrc):
+        wanted = open(nvmrc).read().strip()
+        have = output(['node', '--version']).lstrip('v')
+        if have.split('.')[0] != wanted.split('.')[0]:
+            problems.append(f'{target} needs Node {wanted}.x (see {nvmrc}), you have {have}. Fix: nvm install {wanted} && nvm use {wanted}')
+
+    if problems:
+        error('Setup is incomplete. Fix the following and re-run:')
+        for problem in problems:
+            error(f'  - {problem}')
+        sys.exit(1)
 
 
 def run_app(target, platform, simulator=False):
@@ -145,6 +169,7 @@ def main():
         else:
             build_android_jar('test-options', args.mode)
     else:
+        check_setup(args.target, args.platform)
         if args.target == 'test-app':
             build_test_library(args.platform, args.mode)
             if args.platform == 'android':
