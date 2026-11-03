@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+import os, sys
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from utils import *
 import anes as ane
 import apps as app

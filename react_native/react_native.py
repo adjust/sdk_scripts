@@ -3,6 +3,7 @@ import sys
 sys.dont_write_bytecode = True
 
 import argparse, os, shutil, subprocess
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from utils import *
 
 set_log_tag('REACT-NATIVE-SDK')
