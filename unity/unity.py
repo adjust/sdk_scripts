@@ -14,9 +14,20 @@ SCRIPTS = os.path.dirname(os.path.abspath(__file__))
 TEMP = os.path.expanduser('~/Library/Caches/adjust-unity-sdk')
 ANDROID_SDK = f'{ROOT}/ext/android/sdk'
 IOS_SDK = f'{ROOT}/ext/ios/sdk'
+# the .NET SDK behind the Windows layer; ADJUST_WINDOWS_SDK_DIR points at another checkout of it
+WINDOWS_SDK = os.environ.get('ADJUST_WINDOWS_SDK_DIR') or f'{ROOT}/ext/windows/sdk'
 TEST_NATIVE = f'{ROOT}/Assets/Test/Native'
 EDITORS = '/Applications/Unity/Hub/Editor'
 EDM4U = 'https://github.com/googlesamples/unity-jar-resolver.git?path=upm#v1.2.190'
+NEWTONSOFT = '3.2.1'
+
+# "windows" builds the desktop player of the machine the script runs on
+if sys.platform == 'darwin':
+    DESKTOP_TARGET, DESKTOP_MODULE, DESKTOP_SUFFIX = 'OSXUniversal', 'MacStandaloneSupport', '.app'
+elif sys.platform == 'win32':
+    DESKTOP_TARGET, DESKTOP_MODULE, DESKTOP_SUFFIX = 'Win64', 'WindowsStandaloneSupport', '.exe'
+else:
+    DESKTOP_TARGET, DESKTOP_MODULE, DESKTOP_SUFFIX = 'Linux64', 'LinuxStandaloneSupport', ''
 
 APPS = {
     'example-app': {
@@ -36,9 +47,28 @@ def build_android_aar(module, mode):
     run(['./gradlew', '--init-script', f'{SCRIPTS}/platform/java8.gradle', 'clean', f':tests:{module}:assemble{mode.capitalize()}'])
     copy_file(f'{ANDROID_SDK}/Adjust/tests/{module}/build/outputs/aar/{module}-{mode}.aar', f'{TEST_NATIVE}/Android/adjust-{module}.aar')
 
+# builds one project of the .NET SDK and drops its dll into the Unity package
+def build_dotnet(project, mode, destination):
+    require_dir(WINDOWS_SDK)
+    name = os.path.basename(project)
+    info(f'Building {name} in {mode} mode ...')
+    run(['dotnet', 'build', f'{WINDOWS_SDK}/{project}/{name}.csproj', '-c', mode.capitalize(), '-f', 'netstandard2.0', '-nologo', '-v', 'minimal'])
+    copy_file(f'{WINDOWS_SDK}/{project}/bin/{mode.capitalize()}/netstandard2.0/{name}.dll', f'{destination}/{name}.dll')
+
+# the tests the .NET SDK can run, kept next to its own console test app
+def supported_tests():
+    source = f'{WINDOWS_SDK}/IntegrationTesting/TestAppDotNet/SupportedTests.cs'
+    if not os.path.isfile(source):
+        error(f'{source} is missing. Fix: git submodule update --init --recursive, or set ADJUST_WINDOWS_SDK_DIR')
+        sys.exit(1)
+    return ','.join(re.findall(r'"(Test_\w+)"', open(source).read()))
+
 def build_test_library(platform, mode):
     if platform == 'android':
         build_android_aar('test-library', mode)
+        return
+    if platform == 'windows':
+        build_dotnet('IntegrationTesting/TestLibrary', mode, f'{TEST_NATIVE}/Windows')
         return
 
     require_dir(IOS_SDK)
@@ -68,8 +98,10 @@ def unity_version(requested):
     return version
 
 def check_setup(platform, version):
-    module = 'AndroidPlayer' if platform == 'android' else 'iOSSupport'
-    tool, fix = ('adb', 'install Android SDK platform-tools and add them to PATH') if platform == 'android' else ('pod', 'sudo gem install cocoapods')
+    module = {'android': 'AndroidPlayer', 'ios': 'iOSSupport', 'windows': DESKTOP_MODULE}[platform]
+    tool, fix = {'android': ('adb', 'install Android SDK platform-tools and add them to PATH'),
+                 'ios': ('pod', 'sudo gem install cocoapods'),
+                 'windows': ('dotnet', 'install the .NET SDK from https://dotnet.microsoft.com/download')}[platform]
     problems = []
     if not os.path.isdir(f'{EDITORS}/{version}/PlaybackEngines/{module}'):
         problems.append(f'Unity {version} has no {platform} build support. Fix: add it in Unity Hub > Installs > {version} > Add modules')
@@ -97,9 +129,11 @@ def prepare_project(version):
         run_unity(version, f'{TEMP}/create-{version}.log', ['-createProject', project])
 
     # the example app needs uGUI, which the empty project does not have, and the SDK needs EDM4U
+    # and Newtonsoft.Json (the same dependency its package.json declares)
     manifest = json.load(open(f'{project}/Packages/manifest.json'))
     manifest['dependencies']['com.unity.ugui'] = '2.0.0' if int(version.split('.')[0]) >= 6000 else '1.0.0'
     manifest['dependencies']['com.google.external-dependency-manager'] = EDM4U
+    manifest['dependencies']['com.unity.nuget.newtonsoft-json'] = NEWTONSOFT
     json.dump(manifest, open(f'{project}/Packages/manifest.json', 'w'), indent=2)
 
     for name in ['Adjust', 'Example', 'Test']:
@@ -113,22 +147,32 @@ def prepare_project(version):
             copy_file(f'{EDITORS}/{version}/PlaybackEngines/AndroidPlayer/Tools/GradleTemplates/{name}', f'{project}/Assets/Plugins/Android/{name}')
     return project
 
-def run_app(target, platform, mode, version):
+def run_app(target, platform, mode, version, tests=None):
     app = APPS[target]
     project = prepare_project(version)
     out = f'{project}/Builds/{target}-{platform}'
     remove_dir(out)
 
+    if platform == 'android':
+        build_target, output = platform, f'{out}/{target}.apk'
+    elif platform == 'windows':
+        build_target, output = DESKTOP_TARGET, f'{out}/{target}{DESKTOP_SUFFIX}'
+    else:
+        build_target, output = platform, out
+
     info('Building the app with Unity ...')
-    args = ['-projectPath', project, '-buildTarget', platform, '-executeMethod', 'AdjustAppBuilder.Build',
-            '-adjustScene', app['scene'], '-adjustPackage', app['package'], '-adjustMode', mode,
-            '-adjustOutput', f'{out}/{target}.apk' if platform == 'android' else out]
+    args = ['-projectPath', project, '-buildTarget', build_target, '-executeMethod', 'AdjustAppBuilder.Build',
+            '-adjustScene', app['scene'], '-adjustPackage', app['package'], '-adjustMode', mode, '-adjustOutput', output]
     run_unity(version, f'{project}/build-{target}-{platform}.log', args)
 
     if platform == 'android':
         run(['adb', 'uninstall', app['package']], allow_failure=True)
         run(['adb', 'install', '-r', f'{out}/{target}.apk'])
         run(['adb', 'shell', 'monkey', '-p', app['package'], '1'])
+        return
+
+    if platform == 'windows':
+        run_desktop_app(target, output, tests)
         return
 
     # sign with the team of the first Apple Development certificate in the keychain
@@ -154,6 +198,18 @@ def run_app(target, platform, mode, version):
     run(['sh', '-c', f'xcrun devicectl device install app --device {udid} "{out}"/build/Build/Products/*-iphoneos/*.app'])
     run(['xcrun', 'devicectl', 'device', 'process', 'launch', '--device', udid, app['package']])
 
+# starts the desktop player and returns; the test app quits by itself when the session is over
+def run_desktop_app(target, app, tests):
+    executable = glob.glob(f'{app}/Contents/MacOS/*')[0] if DESKTOP_SUFFIX == '.app' else app
+    log = f'{os.path.dirname(app)}/{target}.log'
+    env = dict(os.environ)
+    if target == 'test-app':
+        # TestApp.Start() reads these and starts the session without the button
+        env['ADJUST_TEST_AUTOSTART'] = '1'
+        env['ADJUST_TEST_NAMES'] = tests
+    info(f'Launching {app}, log: {log} ...')
+    subprocess.Popen([executable, '-logFile', log], env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+
 def main():
     parser = argparse.ArgumentParser(
         description='Build and run the Adjust Unity SDK apps.',
@@ -161,37 +217,57 @@ def main():
                '  ./unity.py build-native test-library android [debug|release]\n'
                '  ./unity.py build-native test-library ios [debug|release]\n'
                '  ./unity.py build-native test-options android [debug|release]\n'
+               '  ./unity.py build-native sdk windows [debug|release]\n'
                '  ./unity.py run example-app android\n'
                '  ./unity.py run test-app ios\n'
-               '  ./unity.py run test-app android --unity 2022.3.62f3\n',
+               '  ./unity.py run test-app android --unity 2022.3.62f3\n'
+               '  ./unity.py run test-app windows --tests "session-count/,Test_Event_tracking"\n',
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('action', choices=['build-native', 'run'])
-    parser.add_argument('target', choices=['test-library', 'test-options', 'example-app', 'test-app'])
-    parser.add_argument('platform', choices=['android', 'ios'])
+    parser.add_argument('target', choices=['sdk', 'test-library', 'test-options', 'example-app', 'test-app'])
+    parser.add_argument('platform', choices=['android', 'ios', 'windows'])
     parser.add_argument('mode', nargs='?', default='debug', choices=['debug', 'release'])
     parser.add_argument('--unity', help='Unity version to build with, newest installed release by default')
+    parser.add_argument('--tests', help='windows test app only: comma separated tests and "directory/" entries to run, '
+                                        'or "all" for every test the server has; the tests the .NET SDK supports by default')
     args = parser.parse_args()
 
-    if args.action == 'build-native' and args.target not in ['test-library', 'test-options']:
-        parser.error('build-native takes test-library or test-options')
+    if args.action == 'build-native' and args.target not in ['sdk', 'test-library', 'test-options']:
+        parser.error('build-native takes sdk, test-library or test-options')
     if args.action == 'run' and args.target not in ['example-app', 'test-app']:
         parser.error('run takes example-app or test-app')
     if args.target == 'test-options' and args.platform == 'ios':
         parser.error('test-options exists on android only')
+    if args.target == 'sdk' and args.platform != 'windows':
+        parser.error('sdk is built from source on windows only, android and ios get theirs through EDM4U')
+    if args.tests and (args.target, args.platform) != ('test-app', 'windows'):
+        parser.error('--tests works with the windows test app only')
 
     if args.action == 'build-native':
-        if args.target == 'test-library':
+        if args.target == 'sdk':
+            build_dotnet('AdjustSdk.DotNet', args.mode, f'{ROOT}/Assets/Adjust/Native/Windows')
+        elif args.target == 'test-library':
             build_test_library(args.platform, args.mode)
         else:
             build_android_aar('test-options', args.mode)
     else:
         version = unity_version(args.unity)
         check_setup(args.platform, version)
+        tests = None
         if args.target == 'test-app':
+            if args.platform == 'windows':
+                tests = '' if args.tests == 'all' else args.tests or supported_tests()
+                if args.mode == 'release':
+                    # SetTestOptions exists in debug builds of the .NET SDK only
+                    info('The windows test app needs the debug SDK, building in debug mode')
+                    args.mode = 'debug'
             build_test_library(args.platform, args.mode)
             if args.platform == 'android':
                 build_android_aar('test-options', args.mode)
-        run_app(args.target, args.platform, args.mode, version)
+        if args.platform == 'windows':
+            # the SDK ships inside the package, so the player gets a fresh build of it
+            build_dotnet('AdjustSdk.DotNet', args.mode, f'{ROOT}/Assets/Adjust/Native/Windows')
+        run_app(args.target, args.platform, args.mode, version, tests)
 
 if __name__ == '__main__':
     try:
