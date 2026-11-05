@@ -152,7 +152,7 @@ def prepare_project(version):
             copy_file(f'{android}/Tools/GradleTemplates/{name}', f'{project}/Assets/Plugins/Android/{name}')
     return project
 
-def run_app(target, platform, mode, version, tests=None):
+def run_app(target, platform, mode, version, tests=None, il2cpp=False):
     app = APPS[target]
     project = prepare_project(version)
     out = f'{project}/Builds/{target}-{platform}'
@@ -167,7 +167,8 @@ def run_app(target, platform, mode, version, tests=None):
 
     info('Building the app with Unity ...')
     args = ['-projectPath', project, '-buildTarget', build_target, '-executeMethod', 'AdjustAppBuilder.Build',
-            '-adjustScene', app['scene'], '-adjustPackage', app['package'], '-adjustMode', mode, '-adjustOutput', output]
+            '-adjustScene', app['scene'], '-adjustPackage', app['package'], '-adjustMode', mode, '-adjustOutput', output,
+            '-adjustBackend', 'il2cpp' if il2cpp else 'mono']
     run_unity(version, f'{project}/build-{target}-{platform}.log', args)
 
     if platform == 'android':
@@ -233,6 +234,7 @@ def main():
     parser.add_argument('platform', choices=['android', 'ios', 'windows'])
     parser.add_argument('mode', nargs='?', default='debug', choices=['debug', 'release'])
     parser.add_argument('--unity', help='Unity version to build with, newest installed release by default')
+    parser.add_argument('--il2cpp', action='store_true', help='windows only: build the player with IL2CPP instead of Mono')
     parser.add_argument('--tests', help='windows test app only: comma separated tests and "directory/" entries to run, '
                                         'or "all" for every test the server has; the tests the .NET SDK supports by default')
     args = parser.parse_args()
@@ -268,7 +270,7 @@ def main():
         if args.platform == 'windows':
             # the SDK ships inside the package, so the player gets a fresh build of it
             build_dotnet('AdjustSdk.DotNet', 'release', f'{ROOT}/Assets/Adjust/Native/Windows')
-        run_app(args.target, args.platform, args.mode, version, tests)
+        run_app(args.target, args.platform, args.mode, version, tests, args.il2cpp)
 
 if __name__ == '__main__':
     try:

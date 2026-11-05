@@ -28,6 +28,14 @@ public static class AdjustAppBuilder
                 EditorApplication.Exit(1);
             }
         }
+        else if (target == BuildTarget.StandaloneWindows64 || target == BuildTarget.StandaloneOSX || target == BuildTarget.StandaloneLinux64)
+        {
+            // mono by default; IL2CPP strips code, which is what the package's link.xml has to survive
+            PlayerSettings.SetScriptingBackend(namedTarget, Argument("-adjustBackend") == "il2cpp" ? ScriptingImplementation.IL2CPP : ScriptingImplementation.Mono2x);
+            // keep Update() ticking without focus, or callbacks wait until the window is in front again; the
+            // setting is saved in the generated project, so editor play mode gets it too
+            PlayerSettings.runInBackground = true;
+        }
         else if (target == BuildTarget.iOS)
         {
             // a new project gets default Adjust settings, which link AdSupport only
