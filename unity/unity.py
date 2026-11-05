@@ -10,14 +10,17 @@ set_log_tag('UNITY-SDK')
 
 ROOT = root_dir()
 SCRIPTS = os.path.dirname(os.path.abspath(__file__))
+WINDOWS = sys.platform == 'win32'
 # outside the repo, kept between runs so Unity does not import everything again each time
-TEMP = os.path.expanduser('~/Library/Caches/adjust-unity-sdk')
+TEMP = os.path.expandvars('%LOCALAPPDATA%/adjust-unity-sdk') if WINDOWS else os.path.expanduser('~/Library/Caches/adjust-unity-sdk')
 ANDROID_SDK = f'{ROOT}/ext/android/sdk'
 IOS_SDK = f'{ROOT}/ext/ios/sdk'
 # the .NET SDK behind the Windows layer; ADJUST_WINDOWS_SDK_DIR points at another checkout of it
 WINDOWS_SDK = os.environ.get('ADJUST_WINDOWS_SDK_DIR') or f'{ROOT}/ext/windows/sdk'
 TEST_NATIVE = f'{ROOT}/Assets/Test/Native'
-EDITORS = '/Applications/Unity/Hub/Editor'
+EDITORS = 'C:/Program Files/Unity/Hub/Editor' if WINDOWS else '/Applications/Unity/Hub/Editor'
+# the editor binary and the player modules, relative to the editor version folder
+UNITY, PLAYBACK_ENGINES = ('Editor/Unity.exe', 'Editor/Data/PlaybackEngines') if WINDOWS else ('Unity.app/Contents/MacOS/Unity', 'PlaybackEngines')
 EDM4U = 'https://github.com/googlesamples/unity-jar-resolver.git?path=upm#v1.2.190'
 NEWTONSOFT = '3.2.1'
 
@@ -103,7 +106,7 @@ def check_setup(platform, version):
                  'ios': ('pod', 'sudo gem install cocoapods'),
                  'windows': ('dotnet', 'install the .NET SDK from https://dotnet.microsoft.com/download')}[platform]
     problems = []
-    if not os.path.isdir(f'{EDITORS}/{version}/PlaybackEngines/{module}'):
+    if not os.path.isdir(f'{EDITORS}/{version}/{PLAYBACK_ENGINES}/{module}'):
         problems.append(f'Unity {version} has no {platform} build support. Fix: add it in Unity Hub > Installs > {version} > Add modules')
     if shutil.which(tool) is None:
         problems.append(f'{tool} not found in PATH. Fix: {fix}')
@@ -116,7 +119,7 @@ def check_setup(platform, version):
 
 def run_unity(version, log, args):
     info(f'Running Unity {version}, log: {log} ...')
-    if subprocess.call([f'{EDITORS}/{version}/Unity.app/Contents/MacOS/Unity', '-batchmode', '-nographics', '-quit', '-logFile', log] + args) != 0:
+    if subprocess.call([f'{EDITORS}/{version}/{UNITY}', '-batchmode', '-nographics', '-quit', '-logFile', log] + args) != 0:
         error(f'Unity failed, see {log}')
         sys.exit(1)
 
@@ -138,13 +141,15 @@ def prepare_project(version):
 
     for name in ['Adjust', 'Example', 'Test']:
         if not os.path.islink(f'{project}/Assets/{name}'):
-            os.symlink(f'{ROOT}/Assets/{name}', f'{project}/Assets/{name}')
+            # windows needs to know it is a folder link; works without admin in developer mode
+            os.symlink(f'{ROOT}/Assets/{name}', f'{project}/Assets/{name}', target_is_directory=True)
     copy_file(f'{SCRIPTS}/platform/AdjustAppBuilder.cs', f'{project}/Assets/Editor/AdjustAppBuilder.cs')
 
-    # EDM4U adds the Android dependencies to these templates
+    # EDM4U adds the Android dependencies to these templates; nothing to copy without the Android module
+    android = f'{EDITORS}/{version}/{PLAYBACK_ENGINES}/AndroidPlayer'
     for name in ['mainTemplate.gradle', 'settingsTemplate.gradle', 'gradleTemplate.properties']:
-        if not os.path.isfile(f'{project}/Assets/Plugins/Android/{name}'):
-            copy_file(f'{EDITORS}/{version}/PlaybackEngines/AndroidPlayer/Tools/GradleTemplates/{name}', f'{project}/Assets/Plugins/Android/{name}')
+        if os.path.isdir(android) and not os.path.isfile(f'{project}/Assets/Plugins/Android/{name}'):
+            copy_file(f'{android}/Tools/GradleTemplates/{name}', f'{project}/Assets/Plugins/Android/{name}')
     return project
 
 def run_app(target, platform, mode, version, tests=None):
@@ -217,7 +222,7 @@ def main():
                '  ./unity.py build-native test-library android [debug|release]\n'
                '  ./unity.py build-native test-library ios [debug|release]\n'
                '  ./unity.py build-native test-options android [debug|release]\n'
-               '  ./unity.py build-native sdk windows [debug|release]\n'
+               '  ./unity.py build-native sdk windows\n'
                '  ./unity.py run example-app android\n'
                '  ./unity.py run test-app ios\n'
                '  ./unity.py run test-app android --unity 2022.3.62f3\n'
@@ -245,7 +250,7 @@ def main():
 
     if args.action == 'build-native':
         if args.target == 'sdk':
-            build_dotnet('AdjustSdk.DotNet', args.mode, f'{ROOT}/Assets/Adjust/Native/Windows')
+            build_dotnet('AdjustSdk.DotNet', 'release', f'{ROOT}/Assets/Adjust/Native/Windows')
         elif args.target == 'test-library':
             build_test_library(args.platform, args.mode)
         else:
@@ -257,16 +262,12 @@ def main():
         if args.target == 'test-app':
             if args.platform == 'windows':
                 tests = '' if args.tests == 'all' else args.tests or supported_tests()
-                if args.mode == 'release':
-                    # SetTestOptions exists in debug builds of the .NET SDK only
-                    info('The windows test app needs the debug SDK, building in debug mode')
-                    args.mode = 'debug'
             build_test_library(args.platform, args.mode)
             if args.platform == 'android':
                 build_android_aar('test-options', args.mode)
         if args.platform == 'windows':
             # the SDK ships inside the package, so the player gets a fresh build of it
-            build_dotnet('AdjustSdk.DotNet', args.mode, f'{ROOT}/Assets/Adjust/Native/Windows')
+            build_dotnet('AdjustSdk.DotNet', 'release', f'{ROOT}/Assets/Adjust/Native/Windows')
         run_app(args.target, args.platform, args.mode, version, tests)
 
 if __name__ == '__main__':
