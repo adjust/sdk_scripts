@@ -60,6 +60,7 @@ def assemble_package():
     recreate_dir(TEMP)
     copy_dir(f'{ROOT}/android', f'{TEMP}/android', '.gradle', 'build')
     copy_dir(f'{ROOT}/ios', f'{TEMP}/ios', 'build', 'Build')
+    copy_dir(f'{ROOT}/scripts', f'{TEMP}/scripts')
     for name in PACKAGE_FILES:
         copy_file(f'{ROOT}/{name}', f'{TEMP}/{name}')
 
