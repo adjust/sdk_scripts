@@ -44,6 +44,14 @@ def connected_ios_device():
             return device['identifier']
     return None
 
+def apple_development_team():
+    # team of the first Apple Development certificate in the keychain, None when there is none
+    try:
+        return output(['sh', '-c', 'security find-certificate -c "Apple Development" -p | openssl x509 -noout -subject'
+                                   " | grep -oE 'OU ?= ?[A-Z0-9]{10}' | grep -oE '[A-Z0-9]{10}$'"])
+    except subprocess.CalledProcessError:
+        return None
+
 def run_background(cmd, cwd, log_path):
     _log(f'{" ".join(cmd)} (background, log: {log_path})', BLUE)
     # fully detach from the terminal; with an inherited stdin, interactive tools like Metro keep
