@@ -1,4 +1,4 @@
-import glob, os, shutil, subprocess, sys
+import glob, json, os, shutil, subprocess, sys, tempfile
 
 TAG = 'SDK'
 
@@ -17,15 +17,32 @@ def info(msg):
 def error(msg):
     _log(msg, RED)
 
-def run(cmd, allow_failure=False):
+def run(cmd, allow_failure=False, env=None):
     _log(' '.join(cmd), BLUE)
     if allow_failure:
-        subprocess.call(cmd)
+        subprocess.call(cmd, env=env)
     else:
-        subprocess.check_call(cmd)
+        subprocess.check_call(cmd, env=env)
 
 def output(cmd):
     return subprocess.check_output(cmd, text=True).strip()
+
+def connected_ios_device():
+    # first paired, reachable physical iOS device; read the JSON because Xcode 27 changed the table
+    # (a plugged-in phone reads "available (paired)" and shows its hardware UDID instead of the identifier)
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, 'devices.json')
+        subprocess.check_call(['xcrun', 'devicectl', 'list', 'devices', '--quiet', '--json-output', path],
+                              stdout=subprocess.DEVNULL)
+        with open(path) as f:
+            devices = json.load(f)['result']['devices']
+    for device in devices:
+        hardware = device.get('hardwareProperties', {})
+        connection = device.get('connectionProperties', {})
+        if hardware.get('platform') == 'iOS' and hardware.get('reality') != 'simulated' \
+                and connection.get('pairingState') == 'paired' and connection.get('transportType'):
+            return device['identifier']
+    return None
 
 def run_background(cmd, cwd, log_path):
     _log(f'{" ".join(cmd)} (background, log: {log_path})', BLUE)

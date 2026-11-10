@@ -2,7 +2,7 @@
 import sys
 sys.dont_write_bytecode = True
 
-import argparse, os, subprocess
+import argparse, os, subprocess, tempfile
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from utils import *
 
@@ -12,6 +12,9 @@ ROOT = root_dir()
 PLUGIN_TEMP = f'{ROOT}/temp_plugin'
 ANDROID_SDK = f'{ROOT}/ext/android/sdk'
 IOS_SDK = f'{ROOT}/ext/ios/sdk'
+
+# lowest iOS version Xcode 27 still builds for
+IOS_DEPLOYMENT_TARGET = '15.0'
 
 SDK_PLUGIN = 'com.adjust.sdk'
 TEST_PLUGIN = 'com.adjust.test'
@@ -81,8 +84,13 @@ def build_test_library(platform, mode):
 
     info('Building iOS test library framework ...')
     change_dir(f'{IOS_SDK}/AdjustTests/AdjustTestLibrary')
-    run(['xcodebuild', '-project', 'AdjustTestLibrary.xcodeproj', '-target', 'AdjustTestLibraryStatic',
-         '-configuration', 'Debug', 'clean', 'build'])
+    # the project is still on iOS 12.0, which Xcode 27 rejects; the static target builds its second slice
+    # with a nested xcodebuild that ignores our command line, so pass the override through the environment
+    with tempfile.NamedTemporaryFile('w', suffix='.xcconfig') as xcconfig:
+        xcconfig.write(f'IPHONEOS_DEPLOYMENT_TARGET = {IOS_DEPLOYMENT_TARGET}\n')
+        xcconfig.flush()
+        run(['xcodebuild', '-project', 'AdjustTestLibrary.xcodeproj', '-target', 'AdjustTestLibraryStatic',
+             '-configuration', 'Debug', 'clean', 'build'], env={**os.environ, 'XCODE_XCCONFIG_FILE': xcconfig.name})
 
     if not os.path.isdir(built):
         error(f'{built} was not produced by the build.')
@@ -134,8 +142,7 @@ def run_app(target, platform, simulator=False):
         # cordova deploys through ios-deploy, which cannot reach iOS 17 and newer, so install ourselves
         info('Building the app ...')
         run(['cordova', 'build', 'ios', '--device'])
-        udid = output(['sh', '-c', "xcrun devicectl list devices --hide-headers | grep -w connected"
-                                  " | grep -oE '[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}' | head -1"])
+        udid = connected_ios_device()
         if not udid:
             error('No connected iOS device found.')
             sys.exit(1)
