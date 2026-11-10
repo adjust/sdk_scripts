@@ -9,7 +9,6 @@ from utils import *
 set_log_tag('CORDOVA-SDK')
 
 ROOT = root_dir()
-PLUGIN_TEMP = f'{ROOT}/temp_plugin'
 ANDROID_SDK = f'{ROOT}/ext/android/sdk'
 IOS_SDK = f'{ROOT}/ext/ios/sdk'
 
@@ -18,10 +17,6 @@ IOS_DEPLOYMENT_TARGET = '15.0'
 
 SDK_PLUGIN = 'com.adjust.sdk'
 TEST_PLUGIN = 'com.adjust.test'
-
-# files and dirs that make up the com.adjust.sdk plugin
-PLUGIN_DIRS = ['www', 'src']
-PLUGIN_FILES = ['package.json', 'plugin.xml']
 
 # the Ionic wrapper: our index.ts is the source, the awesome-cordova-plugins checkout is only the build tool
 WRAPPER_SOURCE = f'{ROOT}/ionic-native/index.ts'
@@ -33,12 +28,14 @@ WRAPPER_STAMP = f'{WRAPPER_DIST}/.adjust-build'
 # keeps the Angular and Capacitor command line tools from prompting or sending usage data
 QUIET = {**os.environ, 'CI': 'true', 'NG_CLI_ANALYTICS': 'false'}
 
-# third party plugins each app needs on top of the Adjust ones
+# 'local' are the Adjust plugins, installed from this repo; each app has an .npmrc that makes npm pack them
+# instead of linking them, so the app gets the same files a published package would have.
+# 'plugins' are the third party plugins each app needs on top of that.
 APPS = {
     'example-app': {
         'dir': f'{ROOT}/example-cordova',
         'package': 'com.adjust.examples',
-        'local': [[PLUGIN_TEMP, '--verbose', '--nofetch']],
+        'local': [[ROOT]],
         'plugins': [
             ['cordova-plugin-customurlscheme', '--variable', 'URL_SCHEME=adjust-example'],
             ['cordova-plugin-dialogs'],
@@ -47,7 +44,7 @@ APPS = {
     'test-app': {
         'dir': f'{ROOT}/test/app/cordova',
         'package': 'com.adjust.examples',
-        'local': [[PLUGIN_TEMP, '--verbose', '--nofetch'], [f'{ROOT}/test/plugin', '--verbose', '--nofetch']],
+        'local': [[ROOT], [f'{ROOT}/test/plugin']],
         'plugins': [
             ['cordova-plugin-device'],
             ['cordova-plugin-customurlscheme', '--variable', 'URL_SCHEME=adjust-test'],
@@ -108,14 +105,6 @@ def build_test_library(platform, mode):
     remove_dir(out)
     copy_dir(built, out)
     remove_dir(f'{out}/Versions')
-
-
-def assemble_plugin():
-    recreate_dir(PLUGIN_TEMP)
-    for name in PLUGIN_DIRS:
-        copy_dir(f'{ROOT}/{name}', f'{PLUGIN_TEMP}/{name}')
-    for name in PLUGIN_FILES:
-        copy_file(f'{ROOT}/{name}', f'{PLUGIN_TEMP}/{name}')
 
 
 def file_hash(path):
@@ -249,9 +238,6 @@ def run_app(target, platform, simulator=False):
     if platform == 'android':
         run(['adb', 'uninstall', app['package']], allow_failure=True)
 
-    info(f'Assembling {SDK_PLUGIN} plugin in {PLUGIN_TEMP} ...')
-    assemble_plugin()
-
     info(f'Reinstalling the {platform} platform ...')
     change_dir(app_dir)
     run(['cordova', 'platform', 'remove', platform], allow_failure=True)
@@ -283,8 +269,6 @@ def run_app(target, platform, simulator=False):
         run(['sh', '-c', f'xcrun devicectl device install app --device {udid}'
                          f' "{app_dir}"/platforms/ios/build/Debug-iphoneos/*.ipa'])
         run(['xcrun', 'devicectl', 'device', 'process', 'launch', '--device', udid, app['package']])
-
-    remove_dir(PLUGIN_TEMP)
 
 
 def main():
