@@ -2,7 +2,7 @@
 import sys
 sys.dont_write_bytecode = True
 
-import argparse, glob, json, os, shutil, subprocess, tempfile
+import argparse, glob, json, os, shutil, socket, subprocess, tempfile
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from utils import *
 
@@ -66,12 +66,18 @@ IOS_LIBS = {
     },
 }
 
-# 'native' are the native libraries each app needs built before it can be built itself
+# 'native' are the native libraries each app needs built before it can be built itself;
+# the NuGet example app has none: it takes the SDK from the packages that `pack` builds
 APPS = {
     'example-app': {
         'project': f'{ROOT}/example/maui/ExampleApp',
         'package': 'com.adjust.examples',
         'native': {'android': ['sdk', 'plugins'], 'ios': ['sdk']},
+    },
+    'nuget-example-app': {
+        'project': f'{ROOT}/example/maui/ExampleApp-Nuget',
+        'package': 'com.adjust.examples',
+        'native': {'android': [], 'ios': []},
     },
     'test-app': {
         'project': f'{ROOT}/test/app/maui/TestApp',
@@ -190,11 +196,38 @@ def find_device(platform, simulator):
     return device
 
 
+def local_ip():
+    # the address other devices on the network reach this machine at; connecting a UDP socket sends nothing
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+        probe.connect(('10.255.255.255', 1))
+        return probe.getsockname()[0]
+
+
+def local_packages():
+    packages = glob.glob(f'{PACKAGES}/*.nupkg')
+    if not packages:
+        error('No packages found. Fix: ./maui.py pack')
+        sys.exit(1)
+    # NuGet keeps its own unpacked copy of every package version it has seen and would keep using
+    # the one from an earlier pack, so drop its copies of the packages we are about to install
+    version = open(f'{ROOT}/VERSION').read().strip()
+    for package in packages:
+        name = os.path.basename(package)[:-len(f'.{version}.nupkg')].lower()
+        remove_dir(os.path.expanduser(f'~/.nuget/packages/{name}/{version}'))
+    return f'-p:RestoreAdditionalProjectSources={PACKAGES}'
+
+
 def run_app(target, platform, mode, simulator, version):
     app = APPS[target]
     project = app['project'] + ('-Net10' if version == 'net10' else '') + '.csproj'
     framework = DOTNET[version][platform]
     config = mode.capitalize()
+    build = ['dotnet', 'build', project, '-c', config, '-f', framework]
+    if target == 'nuget-example-app':
+        build.append(local_packages())
+    if target == 'test-app':
+        # the test app connects to the test server on this machine
+        build.append(f'-p:TestServerIp={local_ip()}')
 
     # look for the device first: without one the .NET build runs to the end before the run fails
     device = find_device(platform, simulator)
@@ -207,14 +240,13 @@ def run_app(target, platform, mode, simulator, version):
     if platform == 'android':
         run(['adb', 'uninstall', app['package']], allow_failure=True)
         info('Building and running the app ...')
-        run(['dotnet', 'build', project, '-c', config, '-f', framework, '-t:Run'])
+        run(build + ['-t:Run'])
         return
 
     runtime = 'iossimulator-arm64' if simulator else 'ios-arm64'
     info('Building the app ...')
     # the .NET 10 iOS workload builds apps only with the one Xcode version it was released for, unless told otherwise
-    run(['dotnet', 'build', project, '-c', config, '-f', framework, f'-p:RuntimeIdentifier={runtime}',
-         '-p:ValidateXcodeVersion=false'])
+    run(build + [f'-p:RuntimeIdentifier={runtime}', '-p:ValidateXcodeVersion=false'])
     name = os.path.splitext(os.path.basename(project))[0]
     built = glob.glob(f'{ARTIFACTS}/{name}/bin/{config}/{framework}/{runtime}/*.app')
     if not built:
@@ -260,6 +292,7 @@ def main():
                '  ./maui.py run test-app ios\n'
                '  ./maui.py run test-app ios --simulator\n'
                '  ./maui.py run example-app android release --net10\n'
+               '  ./maui.py run nuget-example-app ios\n'
                '  ./maui.py pack\n',
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('action', choices=['build-native', 'run', 'pack'])
