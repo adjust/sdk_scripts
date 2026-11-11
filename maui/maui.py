@@ -55,14 +55,10 @@ IOS_LIBS = {
         f'{IOS_SDK}/AdjustSignature/AdjustSigSdk.xcframework':
             f'{ROOT}/ios/AdjustSdk.iOSBinding/AdjustSigSdk.xcframework',
     },
+    # the native build leaves a device and a simulator framework behind, and build_ios joins the two into this one
     'test-library': {
-        f'{IOS_SDK}/sdk_distribution/test-static-framework-device/AdjustTestLibrary.framework':
-            f'{ROOT}/test/plugin/TestLibrary.iOSBinding/AdjustTestLibrary.framework',
-    },
-    # the test library is a plain framework, so the simulator needs its own build of it
-    'test-library-simulator': {
-        f'{IOS_SDK}/sdk_distribution/test-static-framework-simulator/AdjustTestLibrary.framework':
-            f'{ROOT}/test/plugin/TestLibrary.iOSBinding/AdjustTestLibrary.framework',
+        f'{IOS_SDK}/sdk_distribution/test-static-xcframework/AdjustTestLibrary.xcframework':
+            f'{ROOT}/test/plugin/TestLibrary.iOSBinding/AdjustTestLibrary.xcframework',
     },
 }
 
@@ -116,6 +112,20 @@ def build_android(target):
         copy_file(f'{ANDROID_SDK}/Adjust/{module}/build/outputs/aar/{os.path.basename(module)}-release.aar', destination)
 
 
+def join_ios_test_library(xcframework):
+    # one xcframework holds both builds, so an app builds for a device and for the simulator without a rebuild
+    frameworks = f'{IOS_SDK}/sdk_distribution/test-static-framework-'
+    with tempfile.TemporaryDirectory() as temp:
+        # the device framework also carries an Intel simulator build, and an xcframework takes one platform per framework
+        device = f'{temp}/AdjustTestLibrary.framework'
+        shutil.copytree(f'{frameworks}device/AdjustTestLibrary.framework', device, symlinks=True)
+        binary = os.path.realpath(f'{device}/AdjustTestLibrary')
+        run(['lipo', '-thin', 'arm64', binary, '-output', binary])
+        remove_dir(xcframework)
+        run(['xcodebuild', '-create-xcframework', '-framework', device,
+             '-framework', f'{frameworks}simulator/AdjustTestLibrary.framework', '-output', xcframework])
+
+
 def build_ios(target):
     info(f'Building iOS {target} ...')
     # the native projects are still on iOS 12.0, which Xcode 27 rejects; an xcconfig passed through the
@@ -128,10 +138,11 @@ def build_ios(target):
             change_dir(IOS_SDK)
             run(['./scripts/build_frameworks.sh', '-xd', '-ios'], env=env)
         else:
-            library = 'AdjustTestLibraryStaticSimulatorOnly' if target.endswith('simulator') else 'AdjustTestLibraryStatic'
             change_dir(f'{IOS_SDK}/AdjustTests/AdjustTestLibrary')
-            run(['xcodebuild', '-project', 'AdjustTestLibrary.xcodeproj', '-target', library,
-                 '-configuration', 'Debug', 'clean', 'build'], env=env)
+            for library in ['AdjustTestLibraryStatic', 'AdjustTestLibraryStaticSimulatorOnly']:
+                run(['xcodebuild', '-project', 'AdjustTestLibrary.xcodeproj', '-target', library,
+                     '-configuration', 'Debug', 'clean', 'build'], env=env)
+            join_ios_test_library(next(iter(IOS_LIBS[target])))
 
     for built, destination in IOS_LIBS[target].items():
         if not os.path.isdir(built):
@@ -148,7 +159,7 @@ def build_native(target, platform, force=True):
 
     # native builds take minutes, so `run` and `pack` repeat one only when the native submodule has moved
     # since the last build or its output is gone; `build-native` always builds
-    name = f'{platform}-{target.split("-simulator")[0]}'
+    name = f'{platform}-{target}'
     state = f'{target} {output(["git", "-C", sdk, "rev-parse", "HEAD"])}'
     stamp = f'{ARTIFACTS}/native/{name}'
     built = all(os.path.exists(path) for path in libs[target].values())
@@ -247,8 +258,6 @@ def run_app(target, platform, mode, simulator, version):
     # look for the device first: without one the .NET build runs to the end before the run fails
     device = find_device(platform, simulator)
     for native in app.get('native', {}).get(platform, []):
-        if native == 'test-library' and simulator:
-            native = 'test-library-simulator'
         build_native(native, platform, force=False)
     use_dotnet(version)
 
@@ -302,7 +311,6 @@ def main():
                '  ./maui.py build-native sdk android\n'
                '  ./maui.py build-native plugins android\n'
                '  ./maui.py build-native test-library ios\n'
-               '  ./maui.py build-native test-library ios --simulator\n'
                '  ./maui.py run example-app android\n'
                '  ./maui.py run test-app ios\n'
                '  ./maui.py run test-app ios --simulator\n'
@@ -335,15 +343,14 @@ def main():
         parser.error(f'run takes one of: {", ".join(APPS)}')
     if args.target == 'plugins' and args.platform == 'ios':
         parser.error('plugins exist on android only')
-    if args.simulator and args.platform == 'android':
-        parser.error('--simulator applies to ios only')
+    if args.simulator and (args.action == 'build-native' or args.platform == 'android'):
+        parser.error('--simulator applies to running an app on ios only')
     if args.net10 and args.target.startswith('dotnet-'):
         parser.error('the plain .NET apps are .NET 8 only')
 
     check_setup(args.platform)
     if args.action == 'build-native':
-        simulator = args.simulator and args.target == 'test-library'
-        build_native(args.target + ('-simulator' if simulator else ''), args.platform)
+        build_native(args.target, args.platform)
     else:
         run_app(args.target, args.platform, args.mode, args.simulator, 'net10' if args.net10 else 'net8')
 
