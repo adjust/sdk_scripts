@@ -42,8 +42,8 @@ ANDROID_LIBS = {
         'plugins/sdk-plugin-google-lvl': f'{ROOT}/android/AdjustGoogleLVL.AndroidBinding/libs/adjust-android-google-lvl.aar',
     },
     'test-library': {
-        'tests/test-library': f'{ROOT}/android/TestLibrary.AndroidBinding/libs/test-library.aar',
-        'tests/test-options': f'{ROOT}/android/TestLibrary.AndroidBinding/libs/test-options.aar',
+        'tests/test-library': f'{ROOT}/test/plugin/TestLibrary.AndroidBinding/libs/test-library.aar',
+        'tests/test-options': f'{ROOT}/test/plugin/TestLibrary.AndroidBinding/libs/test-options.aar',
     },
 }
 
@@ -57,24 +57,24 @@ IOS_LIBS = {
     },
     'test-library': {
         f'{IOS_SDK}/sdk_distribution/test-static-framework-device/AdjustTestLibrary.framework':
-            f'{ROOT}/ios/TestLibrary.iOSBinding/AdjustTestLibrary.framework',
+            f'{ROOT}/test/plugin/TestLibrary.iOSBinding/AdjustTestLibrary.framework',
     },
     # the test library is a plain framework, so the simulator needs its own build of it
     'test-library-simulator': {
         f'{IOS_SDK}/sdk_distribution/test-static-framework-simulator/AdjustTestLibrary.framework':
-            f'{ROOT}/ios/TestLibrary.iOSBinding/AdjustTestLibrary.framework',
+            f'{ROOT}/test/plugin/TestLibrary.iOSBinding/AdjustTestLibrary.framework',
     },
 }
 
 # 'native' are the native libraries each app needs built before it can be built itself
 APPS = {
     'example-app': {
-        'project': f'{ROOT}/ExampleApp/ExampleApp',
+        'project': f'{ROOT}/example/maui/ExampleApp',
         'package': 'com.adjust.examples',
         'native': {'android': ['sdk', 'plugins'], 'ios': ['sdk']},
     },
     'test-app': {
-        'project': f'{ROOT}/TestApp/TestApp',
+        'project': f'{ROOT}/test/app/maui/TestApp',
         'package': 'com.adjust.examples',
         'native': {'android': ['sdk', 'test-library'], 'ios': ['sdk', 'test-library']},
     },
