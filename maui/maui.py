@@ -66,23 +66,35 @@ IOS_LIBS = {
     },
 }
 
-# 'native' are the native libraries each app needs built before it can be built itself;
-# the NuGet example app has none: it takes the SDK from the packages that `pack` builds
+# every app is installed under the same ID
+PACKAGE = 'com.adjust.examples'
+
+# 'native' are the native libraries an app needs built before it can be built itself.
+# Apps with 'packages' take the SDK from the NuGet packages that `pack` builds, not from the source.
+# The MAUI apps have one project for both platforms and a second one for .NET 10 ({net});
+# the plain .NET apps have one project per platform ({platform}) and are .NET 8 only.
 APPS = {
     'example-app': {
-        'project': f'{ROOT}/example/maui/ExampleApp',
-        'package': 'com.adjust.examples',
+        'project': f'{ROOT}/example/maui/ExampleApp{{net}}.csproj',
         'native': {'android': ['sdk', 'plugins'], 'ios': ['sdk']},
     },
     'nuget-example-app': {
-        'project': f'{ROOT}/example/maui/ExampleApp-Nuget',
-        'package': 'com.adjust.examples',
-        'native': {'android': [], 'ios': []},
+        'project': f'{ROOT}/example/maui/ExampleApp-Nuget{{net}}.csproj',
+        'packages': True,
     },
     'test-app': {
-        'project': f'{ROOT}/test/app/maui/TestApp',
-        'package': 'com.adjust.examples',
+        'project': f'{ROOT}/test/app/maui/TestApp{{net}}.csproj',
         'native': {'android': ['sdk', 'test-library'], 'ios': ['sdk', 'test-library']},
+    },
+    'dotnet-example-app': {
+        'project': f'{ROOT}/example/dotnet/DotNetExample{{platform}}/DotNetExample{{platform}}.csproj',
+        'packages': True,
+    },
+    'dotnet-test-app': {
+        'project': f'{ROOT}/test/app/dotnet/DotNetTest{{platform}}/DotNetTest{{platform}}.csproj',
+        # the test library bindings are built from source, and the Android one needs the SDK's .aar next to it
+        'native': {'android': ['sdk', 'test-library'], 'ios': ['test-library']},
+        'packages': True,
     },
 }
 
@@ -219,26 +231,29 @@ def local_packages():
 
 def run_app(target, platform, mode, simulator, version):
     app = APPS[target]
-    project = app['project'] + ('-Net10' if version == 'net10' else '') + '.csproj'
-    framework = DOTNET[version][platform]
+    plain = '{platform}' in app['project']
+    project = app['project'].format(net='-Net10' if version == 'net10' else '', platform=platform.capitalize())
     config = mode.capitalize()
-    build = ['dotnet', 'build', project, '-c', config, '-f', framework]
-    if target == 'nuget-example-app':
+    build = ['dotnet', 'build', project, '-c', config]
+    if not plain:
+        # the MAUI projects build for both platforms, so say which one
+        build += ['-f', DOTNET[version][platform]]
+    if app.get('packages'):
         build.append(local_packages())
-    if target == 'test-app':
-        # the test app connects to the test server on this machine
+    if target.endswith('test-app'):
+        # the test apps connect to the test server on this machine
         build.append(f'-p:TestServerIp={local_ip()}')
 
     # look for the device first: without one the .NET build runs to the end before the run fails
     device = find_device(platform, simulator)
-    for native in app['native'][platform]:
+    for native in app.get('native', {}).get(platform, []):
         if native == 'test-library' and simulator:
             native = 'test-library-simulator'
         build_native(native, platform, force=False)
     use_dotnet(version)
 
     if platform == 'android':
-        run(['adb', 'uninstall', app['package']], allow_failure=True)
+        run(['adb', 'uninstall', PACKAGE], allow_failure=True)
         info('Building and running the app ...')
         run(build + ['-t:Run'])
         return
@@ -248,7 +263,7 @@ def run_app(target, platform, mode, simulator, version):
     # the .NET 10 iOS workload builds apps only with the one Xcode version it was released for, unless told otherwise
     run(build + [f'-p:RuntimeIdentifier={runtime}', '-p:ValidateXcodeVersion=false'])
     name = os.path.splitext(os.path.basename(project))[0]
-    built = glob.glob(f'{ARTIFACTS}/{name}/bin/{config}/{framework}/{runtime}/*.app')
+    built = glob.glob(f'{ARTIFACTS}/{name}/bin/{config}/*/{runtime}/*.app')
     if not built:
         error('The build did not produce an .app bundle.')
         sys.exit(1)
@@ -257,10 +272,10 @@ def run_app(target, platform, mode, simulator, version):
     info(f'Installing and launching on {device} ...')
     if simulator:
         run(['xcrun', 'simctl', 'install', device, built[0]])
-        run(['xcrun', 'simctl', 'launch', '--terminate-running-process', device, app['package']])
+        run(['xcrun', 'simctl', 'launch', '--terminate-running-process', device, PACKAGE])
     else:
         run(['xcrun', 'devicectl', 'device', 'install', 'app', '--device', device, built[0]])
-        run(['xcrun', 'devicectl', 'device', 'process', 'launch', '--terminate-existing', '--device', device, app['package']])
+        run(['xcrun', 'devicectl', 'device', 'process', 'launch', '--terminate-existing', '--device', device, PACKAGE])
 
 
 def pack():
@@ -293,6 +308,8 @@ def main():
                '  ./maui.py run test-app ios --simulator\n'
                '  ./maui.py run example-app android release --net10\n'
                '  ./maui.py run nuget-example-app ios\n'
+               '  ./maui.py run dotnet-example-app android\n'
+               '  ./maui.py run dotnet-test-app ios\n'
                '  ./maui.py pack\n',
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('action', choices=['build-native', 'run', 'pack'])
@@ -320,6 +337,8 @@ def main():
         parser.error('plugins exist on android only')
     if args.simulator and args.platform == 'android':
         parser.error('--simulator applies to ios only')
+    if args.net10 and args.target.startswith('dotnet-'):
+        parser.error('the plain .NET apps are .NET 8 only')
 
     check_setup(args.platform)
     if args.action == 'build-native':
