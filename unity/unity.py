@@ -159,15 +159,15 @@ def run_app(target, platform, mode, version, tests=None, il2cpp=False):
     remove_dir(out)
 
     if platform == 'android':
-        build_target, output = platform, f'{out}/{target}.apk'
+        build_target, location = platform, f'{out}/{target}.apk'
     elif platform == 'windows':
-        build_target, output = DESKTOP_TARGET, f'{out}/{target}{DESKTOP_SUFFIX}'
+        build_target, location = DESKTOP_TARGET, f'{out}/{target}{DESKTOP_SUFFIX}'
     else:
-        build_target, output = platform, out
+        build_target, location = platform, out
 
     info('Building the app with Unity ...')
     args = ['-projectPath', project, '-buildTarget', build_target, '-executeMethod', 'AdjustAppBuilder.Build',
-            '-adjustScene', app['scene'], '-adjustPackage', app['package'], '-adjustMode', mode, '-adjustOutput', output,
+            '-adjustScene', app['scene'], '-adjustPackage', app['package'], '-adjustMode', mode, '-adjustOutput', location,
             '-adjustBackend', 'il2cpp' if il2cpp else 'mono']
     run_unity(version, f'{project}/build-{target}-{platform}.log', args)
 
@@ -178,7 +178,7 @@ def run_app(target, platform, mode, version, tests=None, il2cpp=False):
         return
 
     if platform == 'windows':
-        run_desktop_app(target, output, tests)
+        run_desktop_app(target, location, tests)
         return
 
     # sign with the team of the first Apple Development certificate in the keychain
