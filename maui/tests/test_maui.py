@@ -240,6 +240,22 @@ class RunAppTest(QuietTestCase):
         self.assertEqual(uninstall.args[0], ['adb', '-s', 'R58M123ABC', 'uninstall', maui.PACKAGE])
         self.assertIn('-t:Run', build.args[0])
         self.assertIn('-p:AdbTarget=-s R58M123ABC', build.args[0])
+        self.assertIn('-p:TestServerIp=192.168.1.20', build.args[0])
+
+
+class LocalIpTest(QuietTestCase):
+    def test_returns_none_without_a_network_route(self):
+        with mock.patch.object(maui.socket.socket, 'connect', side_effect=OSError(51, 'Network is unreachable')):
+            self.assertIsNone(maui.local_ip())
+
+    def test_test_app_build_leaves_the_address_out_when_offline(self):
+        with mock.patch.object(maui, 'local_ip', return_value=None), \
+                mock.patch.object(maui, 'find_device', return_value='emulator-5554'), \
+                mock.patch.object(maui, 'build_native'), mock.patch.object(maui, 'use_dotnet'), \
+                mock.patch.object(maui, 'run') as run:
+            maui.run_app('test-app', 'android', 'debug', False, 'net8')
+        build = run.call_args_list[-1].args[0]
+        self.assertFalse(any(argument.startswith('-p:TestServerIp') for argument in build))
 
 
 if __name__ == '__main__':

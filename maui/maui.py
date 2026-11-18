@@ -319,10 +319,15 @@ def find_device(platform, simulator, name=None):
 
 
 def local_ip():
-    # the address other devices on the network reach this machine at; connecting a UDP socket sends nothing
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
-        probe.connect(('10.255.255.255', 1))
-        return probe.getsockname()[0]
+    # the address other devices on the network reach this machine at; connecting a UDP socket sends nothing.
+    # None without a network route: the test apps then use their own default (the simulator's or emulator's host)
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+            probe.connect(('10.255.255.255', 1))
+            return probe.getsockname()[0]
+    except OSError as failure:
+        info(f'No network address found ({failure}); the test app uses its default test server address.')
+        return None
 
 
 def local_packages():
@@ -352,7 +357,9 @@ def run_app(target, platform, mode, simulator, version, device_name=None):
         build.append(local_packages())
     if target.endswith('test-app'):
         # the test apps connect to the test server on this machine
-        build.append(f'-p:TestServerIp={local_ip()}')
+        ip = local_ip()
+        if ip:
+            build.append(f'-p:TestServerIp={ip}')
 
     # look for the device first: without one the .NET build runs to the end before the run fails
     device = find_device(platform, simulator, device_name)
