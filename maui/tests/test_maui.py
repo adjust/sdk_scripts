@@ -243,6 +243,44 @@ class RunAppTest(QuietTestCase):
         self.assertIn('-p:TestServerIp=192.168.1.20', build.args[0])
 
 
+class IosAppBundleTest(QuietTestCase):
+    # the build is replaced by one that answers -getResultOutputFile the way the iOS SDK does: the
+    # _AppBundlePath of this build, relative to the project directory
+    def setUp(self):
+        super().setUp()
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.root = temp.name
+        self.project = f'{self.root}/test/app/maui/TestApp.csproj'
+        write(self.project, '<Project />')
+
+    def build_reporting(self, bundle):
+        def run(cmd, **kwargs):
+            result = next(argument.split(':', 1)[1] for argument in cmd if argument.startswith('-getResultOutputFile:'))
+            write(result, bundle + '\n')
+        return mock.patch.object(maui, 'run', side_effect=run)
+
+    def test_installs_the_bundle_this_build_reports(self):
+        current = f'{self.root}/.artifacts/TestApp/bin/Debug/net8.0-ios/iossimulator-arm64/TestApp.app'
+        stale = f'{self.root}/.artifacts/TestApp/bin/Debug/net8.0-ios18.0/iossimulator-arm64/TestApp.app'
+        write(f'{current}/TestApp', 'new build')
+        write(f'{stale}/TestApp', 'old build')
+        os.utime(current, (1, 1))  # the current bundle's folder looks older; only its contents changed
+        with self.build_reporting('../../../.artifacts/TestApp/bin/Debug/net8.0-ios/iossimulator-arm64/TestApp.app/') as run:
+            app_bundle = maui.build_ios_app(self.project, ['dotnet', 'build', self.project])
+        self.assertEqual(app_bundle, current)
+        self.assertIn('-t:Build', run.call_args.args[0])
+        self.assertIn('-getProperty:_AppBundlePath', run.call_args.args[0])
+
+    def test_stops_when_the_reported_bundle_is_missing(self):
+        with self.build_reporting('bin/Debug/net8.0-ios/iossimulator-arm64/TestApp.app/'), self.assertRaises(SystemExit):
+            maui.build_ios_app(self.project, ['dotnet', 'build', self.project])
+
+    def test_stops_when_nothing_is_reported(self):
+        with self.build_reporting(''), self.assertRaises(SystemExit):
+            maui.build_ios_app(self.project, ['dotnet', 'build', self.project])
+
+
 class LocalIpTest(QuietTestCase):
     def test_returns_none_without_a_network_route(self):
         with mock.patch.object(maui.socket.socket, 'connect', side_effect=OSError(51, 'Network is unreachable')):

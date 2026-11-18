@@ -344,6 +344,22 @@ def local_packages():
     return f'-p:RestoreAdditionalProjectSources={PACKAGES}'
 
 
+def build_ios_app(project, build):
+    # build, and ask the iOS SDK where this very build put the app bundle (_AppBundlePath, relative to the project):
+    # other target frameworks may have left older bundles next to it. -getProperty needs an explicit -t:Build,
+    # or MSBuild only evaluates the project; -getResultOutputFile keeps the build log on the console
+    with tempfile.TemporaryDirectory() as temp:
+        result = f'{temp}/app-bundle-path'
+        run(build + ['-t:Build', '-getProperty:_AppBundlePath', f'-getResultOutputFile:{result}'])
+        with open(result) as file:
+            bundle = file.read().strip()
+    app_bundle = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(project)), bundle)) if bundle else None
+    if not app_bundle or not os.path.isdir(app_bundle):
+        error(f'The build did not produce an .app bundle (reported: {bundle or "nothing"}).')
+        sys.exit(1)
+    return app_bundle
+
+
 def run_app(target, platform, mode, simulator, version, device_name=None):
     app = APPS[target]
     plain = '{platform}' in app['project']
@@ -377,20 +393,15 @@ def run_app(target, platform, mode, simulator, version, device_name=None):
     runtime = 'iossimulator-arm64' if simulator else 'ios-arm64'
     info('Building the app ...')
     # the .NET 10 iOS workload builds apps only with the one Xcode version it was released for, unless told otherwise
-    run(build + [f'-p:RuntimeIdentifier={runtime}', '-p:ValidateXcodeVersion=false'])
-    name = os.path.splitext(os.path.basename(project))[0]
-    built = glob.glob(f'{ARTIFACTS}/{name}/bin/{config}/*/{runtime}/*.app')
-    if not built:
-        error('The build did not produce an .app bundle.')
-        sys.exit(1)
+    app_bundle = build_ios_app(project, build + [f'-p:RuntimeIdentifier={runtime}', '-p:ValidateXcodeVersion=false'])
 
     # .NET deploys through mlaunch, which lags behind new Xcode and iOS versions, so install ourselves
     info(f'Installing and launching on {device} ...')
     if simulator:
-        run(['xcrun', 'simctl', 'install', device, built[0]])
+        run(['xcrun', 'simctl', 'install', device, app_bundle])
         run(['xcrun', 'simctl', 'launch', '--terminate-running-process', device, PACKAGE])
     else:
-        run(['xcrun', 'devicectl', 'device', 'install', 'app', '--device', device, built[0]])
+        run(['xcrun', 'devicectl', 'device', 'install', 'app', '--device', device, app_bundle])
         run(['xcrun', 'devicectl', 'device', 'process', 'launch', '--terminate-existing', '--device', device, PACKAGE])
 
 
