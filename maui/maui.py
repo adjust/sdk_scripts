@@ -2,7 +2,7 @@
 import sys
 sys.dont_write_bytecode = True
 
-import argparse, glob, json, os, shutil, socket, subprocess, tempfile
+import argparse, glob, json, os, shutil, socket, subprocess, tempfile, time
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from utils import *
 
@@ -202,10 +202,62 @@ def check_setup(platform=None):
         sys.exit(1)
 
 
-def find_device(platform, simulator):
+# how long to wait for a connected Android device to finish booting
+ANDROID_BOOT_TIMEOUT = 300
+
+
+def android_devices():
+    # serial -> state for every device `adb devices` lists; only 'device' can be installed on,
+    # the others are e.g. 'offline' (still booting) or 'unauthorized' (USB debugging not allowed yet)
+    devices = {}
+    for line in output(['adb', 'devices']).splitlines()[1:]:
+        fields = line.split()
+        if len(fields) >= 2:
+            devices[fields[0]] = fields[1]
+    return devices
+
+
+def find_android_device(serial):
+    devices = android_devices()
+    ready = [name for name, state in devices.items() if state == 'device']
+    not_ready = [f'{name} ({state})' for name, state in devices.items() if state != 'device']
+    if serial:
+        if serial not in ready:
+            error(f'Android device {serial} is not ready: {devices.get(serial, "not connected")}.')
+            sys.exit(1)
+        return serial
+    if not ready:
+        error('No connected Android device is ready.' + (f' Not ready: {", ".join(not_ready)}' if not_ready else ''))
+        sys.exit(1)
+    if len(ready) > 1:
+        error(f'More than one Android device is ready: {", ".join(ready)}. Fix: pick one with --device <serial>')
+        sys.exit(1)
+    return ready[0]
+
+
+def wait_for_android_boot(serial):
+    deadline = time.monotonic() + ANDROID_BOOT_TIMEOUT
+    waiting = False
+    while True:
+        try:
+            if output(['adb', '-s', serial, 'shell', 'getprop', 'sys.boot_completed']) == '1':
+                return
+        except subprocess.CalledProcessError:
+            pass
+        if time.monotonic() >= deadline:
+            error(f'{serial} did not finish booting within {ANDROID_BOOT_TIMEOUT} seconds.')
+            sys.exit(1)
+        if not waiting:
+            info(f'Waiting for {serial} to finish booting ...')
+            waiting = True
+        time.sleep(2)
+
+
+def find_device(platform, simulator, name=None):
     if platform == 'android':
-        device = output(['adb', 'devices']).splitlines()[1:]
-        problem = 'No connected Android device found.'
+        device = find_android_device(name)
+        wait_for_android_boot(device)
+        return device
     elif simulator:
         booted = json.loads(output(['xcrun', 'simctl', 'list', 'devices', 'booted', '--json']))['devices']
         device = next((device['udid'] for runtime in booted.values() for device in runtime), None)
@@ -240,7 +292,7 @@ def local_packages():
     return f'-p:RestoreAdditionalProjectSources={PACKAGES}'
 
 
-def run_app(target, platform, mode, simulator, version):
+def run_app(target, platform, mode, simulator, version, device_name=None):
     app = APPS[target]
     plain = '{platform}' in app['project']
     project = app['project'].format(net='-Net10' if version == 'net10' else '', platform=platform.capitalize())
@@ -256,15 +308,16 @@ def run_app(target, platform, mode, simulator, version):
         build.append(f'-p:TestServerIp={local_ip()}')
 
     # look for the device first: without one the .NET build runs to the end before the run fails
-    device = find_device(platform, simulator)
+    device = find_device(platform, simulator, device_name)
     for native in app.get('native', {}).get(platform, []):
         build_native(native, platform, force=False)
     use_dotnet(version)
 
     if platform == 'android':
-        run(['adb', 'uninstall', PACKAGE], allow_failure=True)
-        info('Building and running the app ...')
-        run(build + ['-t:Run'])
+        # name the device everywhere: with more than one connected, adb and the Run target refuse to pick
+        run(['adb', '-s', device, 'uninstall', PACKAGE], allow_failure=True)
+        info(f'Building and running the app on {device} ...')
+        run(build + ['-t:Run', f'-p:AdbTarget=-s {device}'])
         return
 
     runtime = 'iossimulator-arm64' if simulator else 'ios-arm64'
@@ -312,6 +365,7 @@ def main():
                '  ./maui.py build-native plugins android\n'
                '  ./maui.py build-native test-library ios\n'
                '  ./maui.py run example-app android\n'
+               '  ./maui.py run example-app android --device emulator-5554\n'
                '  ./maui.py run test-app ios\n'
                '  ./maui.py run test-app ios --simulator\n'
                '  ./maui.py run example-app android release --net10\n'
@@ -325,6 +379,7 @@ def main():
     parser.add_argument('platform', nargs='?', choices=['android', 'ios'])
     parser.add_argument('mode', nargs='?', default='debug', choices=['debug', 'release'])
     parser.add_argument('--simulator', action='store_true', help='run on the booted simulator instead of a connected device')
+    parser.add_argument('--device', help='the Android device serial to run on, when more than one is connected')
     parser.add_argument('--net10', action='store_true', help='build the app with .NET 10 instead of .NET 8')
     args = parser.parse_args()
 
@@ -347,12 +402,14 @@ def main():
         parser.error('--simulator applies to running an app on ios only')
     if args.net10 and args.target.startswith('dotnet-'):
         parser.error('the plain .NET apps are .NET 8 only')
+    if args.device and (args.action != 'run' or args.platform != 'android'):
+        parser.error('--device applies to running an app on android only')
 
     check_setup(args.platform)
     if args.action == 'build-native':
         build_native(args.target, args.platform)
     else:
-        run_app(args.target, args.platform, args.mode, args.simulator, 'net10' if args.net10 else 'net8')
+        run_app(args.target, args.platform, args.mode, args.simulator, 'net10' if args.net10 else 'net8', args.device)
 
 
 if __name__ == '__main__':
