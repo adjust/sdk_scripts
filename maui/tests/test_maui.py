@@ -281,6 +281,38 @@ class IosAppBundleTest(QuietTestCase):
             maui.build_ios_app(self.project, ['dotnet', 'build', self.project])
 
 
+class LocalPackagesTest(QuietTestCase):
+    def setUp(self):
+        super().setUp()
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.packages = f'{temp.name}/.artifacts/packages'
+        write(f'{temp.name}/VERSION', '5.8.0\n')
+        for name, value in (('ROOT', temp.name), ('PACKAGES', self.packages)):
+            patcher = mock.patch.object(maui, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def test_drops_only_nugets_cached_copies_of_the_packed_versions(self):
+        for package in ('Adjust.Maui.Sdk', 'Adjust.Maui.Sdk.Meta.Referrer', 'Adjust.Maui.Sdk.Google.LVL'):
+            write(f'{self.packages}/{package}.5.8.0.nupkg', '')
+        with mock.patch.object(maui, 'remove_dir') as remove_dir:
+            argument = maui.local_packages()
+        self.assertEqual(argument, f'-p:RestoreAdditionalProjectSources={self.packages}')
+        cache = os.path.expanduser('~/.nuget/packages')
+        self.assertEqual(sorted(call.args[0] for call in remove_dir.call_args_list), [
+            f'{cache}/adjust.maui.sdk.google.lvl/5.8.0',
+            f'{cache}/adjust.maui.sdk.meta.referrer/5.8.0',
+            f'{cache}/adjust.maui.sdk/5.8.0',
+        ])
+
+    def test_stops_when_nothing_was_packed(self):
+        os.makedirs(self.packages)
+        with mock.patch.object(maui, 'remove_dir') as remove_dir, self.assertRaises(SystemExit):
+            maui.local_packages()
+        remove_dir.assert_not_called()
+
+
 class LocalIpTest(QuietTestCase):
     def test_returns_none_without_a_network_route(self):
         with mock.patch.object(maui.socket.socket, 'connect', side_effect=OSError(51, 'Network is unreachable')):
