@@ -2,7 +2,7 @@
 import sys
 sys.dont_write_bytecode = True
 
-import argparse, glob, json, os, shutil, socket, subprocess, tempfile, time
+import argparse, glob, hashlib, json, os, shutil, socket, subprocess, tempfile, time
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from utils import *
 
@@ -153,18 +153,46 @@ def build_ios(target):
         info(f'{built} -> {destination}')
 
 
+def native_source_state(sdk):
+    # what a native build is made from: the checked-out commit, uncommitted changes to tracked files and
+    # the contents of untracked files Git does not ignore (new sources); ignored files, such as build output, don't count
+    digest = hashlib.sha256(subprocess.check_output(['git', '-C', sdk, 'diff', 'HEAD', '--binary']))
+    untracked = subprocess.check_output(['git', '-C', sdk, 'ls-files', '--others', '--exclude-standard', '-z'])
+    for path in sorted(filter(None, untracked.split(b'\0'))):
+        full = os.path.join(sdk, os.fsdecode(path))
+        digest.update(path + b'\0')
+        if os.path.islink(full):
+            digest.update(os.fsencode(os.readlink(full)))
+        else:
+            with open(full, 'rb') as file:
+                digest.update(file.read())
+    return f'{output(["git", "-C", sdk, "rev-parse", "HEAD"])} {digest.hexdigest()}'
+
+
+def require_committed_native_source():
+    # a release package is built only from committed native source: list what isn't, and leave it alone
+    for sdk in (ANDROID_SDK, IOS_SDK):
+        require_dir(sdk)
+        changes = output(['git', '-C', sdk, 'status', '--porcelain', '--untracked-files=all'])
+        if changes:
+            error(f'{sdk} has uncommitted or untracked changes; a release is packed only from a committed native revision:')
+            for line in changes.splitlines():
+                error(f'  {line}')
+            sys.exit(1)
+
+
 def build_native(target, platform, force=True):
     sdk, libs = (ANDROID_SDK, ANDROID_LIBS) if platform == 'android' else (IOS_SDK, IOS_LIBS)
     require_dir(sdk)
 
-    # native builds take minutes, so `run` and `pack` repeat one only when the native submodule has moved
-    # since the last build or its output is gone; `build-native` always builds
+    # native builds take minutes, so `run` repeats one only when the native source has changed since the last
+    # build (a new submodule commit, an edit or a new untracked file) or its output is gone; `build-native` always builds
     name = f'{platform}-{target}'
-    state = f'{target} {output(["git", "-C", sdk, "rev-parse", "HEAD"])}'
+    state = f'{target} {native_source_state(sdk)}'
     stamp = f'{ARTIFACTS}/native/{name}'
     built = all(os.path.exists(path) for path in libs[target].values())
     if not force and built and os.path.isfile(stamp) and open(stamp).read() == state:
-        info(f'Native {name} is already built from the current submodule commit.')
+        info(f'Native {name} is already built from the current native source.')
         return
 
     build_android(target) if platform == 'android' else build_ios(target)
@@ -341,8 +369,10 @@ def run_app(target, platform, mode, simulator, version, device_name=None):
 
 
 def pack():
+    # the packages ship the native libraries, so build them again from committed source, never from a cache
+    require_committed_native_source()
     for platform, target in [('android', 'sdk'), ('android', 'plugins'), ('ios', 'sdk')]:
-        build_native(target, platform, force=False)
+        build_native(target, platform, force=True)
 
     # every package carries both the .NET 8 and the .NET 10 build
     for version in DOTNET:
