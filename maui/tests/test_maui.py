@@ -4,7 +4,7 @@
 import sys
 sys.dont_write_bytecode = True
 
-import importlib.util, os, subprocess, tempfile, unittest
+import importlib.util, json, os, subprocess, tempfile, unittest
 from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -79,6 +79,46 @@ class AndroidDeviceTest(QuietTestCase):
                 mock.patch.object(maui.time, 'monotonic', side_effect=lambda: next(clock)), \
                 mock.patch.object(maui.time, 'sleep'), self.assertRaises(SystemExit):
             maui.wait_for_android_boot('emulator-5554')
+
+
+def simctl_booted(*simulators):
+    return json.dumps({'devices': {'com.apple.CoreSimulator.SimRuntime.iOS-27-0': [
+        {'name': name, 'udid': udid, 'state': 'Booted'} for name, udid in simulators]}})
+
+
+IPHONE = ('iPhone 17 Pro', 'AAAA-1111')
+IPAD = ('iPad Air', 'BBBB-2222')
+
+
+class IosDeviceTest(QuietTestCase):
+    def booted(self, *simulators):
+        return mock.patch.object(maui, 'output', return_value=simctl_booted(*simulators))
+
+    def test_picks_the_only_booted_simulator(self):
+        with self.booted(IPHONE):
+            self.assertEqual(maui.find_device('ios', True), 'AAAA-1111')
+
+    def test_stops_when_none_is_booted(self):
+        with self.booted(), self.assertRaises(SystemExit):
+            maui.find_device('ios', True)
+
+    def test_stops_when_several_are_booted_and_none_is_named(self):
+        with self.booted(IPHONE, IPAD), self.assertRaises(SystemExit):
+            maui.find_device('ios', True)
+
+    def test_takes_the_simulator_named_by_name_or_udid(self):
+        with self.booted(IPHONE, IPAD):
+            self.assertEqual(maui.find_device('ios', True, 'iPad Air'), 'BBBB-2222')
+            self.assertEqual(maui.find_device('ios', True, 'AAAA-1111'), 'AAAA-1111')
+
+    def test_stops_when_the_named_simulator_is_not_booted(self):
+        with self.booted(IPHONE), self.assertRaises(SystemExit):
+            maui.find_device('ios', True, 'iPad Air')
+
+    def test_takes_the_named_physical_device(self):
+        with mock.patch.object(maui, 'connected_ios_device') as connected:
+            self.assertEqual(maui.find_device('ios', False, '00008110-000A'), '00008110-000A')
+        connected.assert_not_called()
 
 
 def git(repo, *args):

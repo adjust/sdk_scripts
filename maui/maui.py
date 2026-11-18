@@ -281,17 +281,36 @@ def wait_for_android_boot(serial):
         time.sleep(2)
 
 
+def find_ios_simulator(name):
+    # the booted simulator to run on: the one named (by name or UDID), or the only one booted
+    booted = json.loads(output(['xcrun', 'simctl', 'list', 'devices', 'booted', '--json']))['devices']
+    simulators = [simulator for runtime in booted.values() for simulator in runtime]
+    if name:
+        match = next((simulator for simulator in simulators if name in (simulator['name'], simulator['udid'])), None)
+        if not match:
+            error(f'No booted iOS simulator is named {name}. Booted: '
+                  + (', '.join(f'{simulator["name"]} ({simulator["udid"]})' for simulator in simulators) or 'none'))
+            sys.exit(1)
+        return match['udid']
+    if len(simulators) > 1:
+        error('More than one iOS simulator is booted: '
+              + ', '.join(f'{simulator["name"]} ({simulator["udid"]})' for simulator in simulators)
+              + '. Fix: pick one with --device <name or UDID>')
+        sys.exit(1)
+    return simulators[0]['udid'] if simulators else None
+
+
 def find_device(platform, simulator, name=None):
     if platform == 'android':
         device = find_android_device(name)
         wait_for_android_boot(device)
         return device
     elif simulator:
-        booted = json.loads(output(['xcrun', 'simctl', 'list', 'devices', 'booted', '--json']))['devices']
-        device = next((device['udid'] for runtime in booted.values() for device in runtime), None)
+        device = find_ios_simulator(name)
         problem = 'No booted iOS simulator found. Fix: open the Simulator app and boot a device'
     else:
-        device = connected_ios_device()
+        # devicectl checks a named device itself when installing
+        device = name or connected_ios_device()
         problem = 'No connected iOS device found.'
     if not device:
         error(problem)
@@ -398,6 +417,7 @@ def main():
                '  ./maui.py run example-app android --device emulator-5554\n'
                '  ./maui.py run test-app ios\n'
                '  ./maui.py run test-app ios --simulator\n'
+               '  ./maui.py run test-app ios --simulator --device "iPhone 17 Pro"\n'
                '  ./maui.py run example-app android release --net10\n'
                '  ./maui.py run nuget-example-app ios\n'
                '  ./maui.py run dotnet-example-app android\n'
@@ -409,7 +429,8 @@ def main():
     parser.add_argument('platform', nargs='?', choices=['android', 'ios'])
     parser.add_argument('mode', nargs='?', default='debug', choices=['debug', 'release'])
     parser.add_argument('--simulator', action='store_true', help='run on the booted simulator instead of a connected device')
-    parser.add_argument('--device', help='the Android device serial to run on, when more than one is connected')
+    parser.add_argument('--device', help='the device to run on when more than one is available: an Android serial, '
+                                         'an iOS simulator name or UDID (with --simulator) or an iOS device UDID')
     parser.add_argument('--net10', action='store_true', help='build the app with .NET 10 instead of .NET 8')
     args = parser.parse_args()
 
@@ -432,8 +453,8 @@ def main():
         parser.error('--simulator applies to running an app on ios only')
     if args.net10 and args.target.startswith('dotnet-'):
         parser.error('the plain .NET apps are .NET 8 only')
-    if args.device and (args.action != 'run' or args.platform != 'android'):
-        parser.error('--device applies to running an app on android only')
+    if args.device and args.action != 'run':
+        parser.error('--device applies to running an app only')
 
     check_setup(args.platform)
     if args.action == 'build-native':
