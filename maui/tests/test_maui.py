@@ -134,6 +134,16 @@ class IosDeviceTest(QuietTestCase):
         with self.booted(IPHONE), self.assertRaises(SystemExit):
             maui.find_device('ios', True, 'iPad Air')
 
+    def test_stops_when_the_name_is_booted_on_several_runtimes(self):
+        # the same simulator name on two runtimes; whichever order simctl lists them in, the name alone is refused
+        runtimes = {'com.apple.CoreSimulator.SimRuntime.iOS-26-5': [{'name': 'iPhone 17 Pro', 'udid': 'AAAA-1111'}],
+                    'com.apple.CoreSimulator.SimRuntime.iOS-27-0': [{'name': 'iPhone 17 Pro', 'udid': 'CCCC-3333'}]}
+        for order in (list(runtimes.items()), list(reversed(runtimes.items()))):
+            with mock.patch.object(maui, 'output', return_value=json.dumps({'devices': dict(order)})):
+                with self.assertRaises(SystemExit):
+                    maui.find_device('ios', True, 'iPhone 17 Pro')
+                self.assertEqual(maui.find_device('ios', True, 'CCCC-3333'), 'CCCC-3333')
+
     def test_takes_the_named_physical_device(self):
         with mock.patch.object(maui, 'connected_ios_device') as connected:
             self.assertEqual(maui.find_device('ios', False, '00008110-000A'), '00008110-000A')

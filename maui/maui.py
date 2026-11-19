@@ -301,21 +301,29 @@ def wait_for_android_boot(serial):
         time.sleep(min(2, max(0, deadline - time.monotonic())))
 
 
+def describe_simulators(simulators):
+    return ', '.join(f'{simulator["name"]} on {simulator["runtime"]} ({simulator["udid"]})' for simulator in simulators) or 'none'
+
+
 def find_ios_simulator(name):
     # the booted simulator to run on: the one named (by name or UDID), or the only one booted
     booted = json.loads(output(['xcrun', 'simctl', 'list', 'devices', 'booted', '--json']))['devices']
-    simulators = [simulator for runtime in booted.values() for simulator in runtime]
+    simulators = [{**simulator, 'runtime': runtime.rsplit('.', 1)[-1]}
+                  for runtime, devices in booted.items() for simulator in devices]
     if name:
-        match = next((simulator for simulator in simulators if name in (simulator['name'], simulator['udid'])), None)
-        if not match:
-            error(f'No booted iOS simulator is named {name}. Booted: '
-                  + (', '.join(f'{simulator["name"]} ({simulator["udid"]})' for simulator in simulators) or 'none'))
+        matches = [simulator for simulator in simulators if name in (simulator['name'], simulator['udid'])]
+        if not matches:
+            error(f'No booted iOS simulator is named {name}. Booted: {describe_simulators(simulators)}')
             sys.exit(1)
-        return match['udid']
+        if len(matches) > 1:
+            # the same name can be booted on several runtimes: only the UDID says which one is meant
+            error(f'More than one booted iOS simulator is named {name}: {describe_simulators(matches)}. '
+                  'Fix: pick one with --device <UDID>')
+            sys.exit(1)
+        return matches[0]['udid']
     if len(simulators) > 1:
-        error('More than one iOS simulator is booted: '
-              + ', '.join(f'{simulator["name"]} ({simulator["udid"]})' for simulator in simulators)
-              + '. Fix: pick one with --device <name or UDID>')
+        error(f'More than one iOS simulator is booted: {describe_simulators(simulators)}. '
+              'Fix: pick one with --device <name or UDID>')
         sys.exit(1)
     return simulators[0]['udid'] if simulators else None
 
