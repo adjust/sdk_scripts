@@ -275,22 +275,30 @@ def find_android_device(serial):
     return ready[0]
 
 
+def android_boot_completed(serial, timeout):
+    # adb can hang on a device that is going offline, so each check gets no more than the time left to wait
+    try:
+        result = subprocess.run(['adb', '-s', serial, 'shell', 'getprop', 'sys.boot_completed'],
+                                capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return False
+    return result.returncode == 0 and result.stdout.strip() == '1'
+
+
 def wait_for_android_boot(serial):
     deadline = time.monotonic() + ANDROID_BOOT_TIMEOUT
     waiting = False
     while True:
-        try:
-            if output(['adb', '-s', serial, 'shell', 'getprop', 'sys.boot_completed']) == '1':
-                return
-        except subprocess.CalledProcessError:
-            pass
-        if time.monotonic() >= deadline:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
             error(f'{serial} did not finish booting within {ANDROID_BOOT_TIMEOUT} seconds.')
             sys.exit(1)
+        if android_boot_completed(serial, remaining):
+            return
         if not waiting:
             info(f'Waiting for {serial} to finish booting ...')
             waiting = True
-        time.sleep(2)
+        time.sleep(min(2, max(0, deadline - time.monotonic())))
 
 
 def find_ios_simulator(name):

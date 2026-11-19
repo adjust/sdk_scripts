@@ -58,27 +58,46 @@ class AndroidDeviceTest(QuietTestCase):
         with self.devices(ADB_DEVICES), self.assertRaises(SystemExit):
             maui.find_android_device('R58M123ABC')
 
-    def test_waits_until_booted(self):
-        answers = iter([subprocess.CalledProcessError(1, 'adb'), '', '1'])
+    @staticmethod
+    def adb_answers(*answers):
+        # each answer is the getprop output, or an exception adb's run raises (e.g. a timeout)
+        answers = iter(answers)
 
-        def boot_completed(cmd):
+        def adb(cmd, **kwargs):
             answer = next(answers)
             if isinstance(answer, Exception):
                 raise answer
-            return answer
+            return subprocess.CompletedProcess(cmd, 0 if answer is not None else 1, stdout=f'{answer or ""}\n')
+        return mock.patch.object(maui.subprocess, 'run', side_effect=adb)
 
-        with mock.patch.object(maui, 'output', side_effect=boot_completed) as output, \
-                mock.patch.object(maui.time, 'sleep'):
+    def test_waits_until_booted(self):
+        with self.adb_answers(None, '', '1') as run, mock.patch.object(maui.time, 'sleep'):
             maui.wait_for_android_boot('emulator-5554')
-        self.assertEqual(output.call_count, 3)
-        output.assert_called_with(['adb', '-s', 'emulator-5554', 'shell', 'getprop', 'sys.boot_completed'])
+        self.assertEqual(run.call_count, 3)
+        self.assertEqual(run.call_args.args[0], ['adb', '-s', 'emulator-5554', 'shell', 'getprop', 'sys.boot_completed'])
 
     def test_boot_wait_times_out(self):
-        clock = iter([0, 0, maui.ANDROID_BOOT_TIMEOUT + 1])
-        with mock.patch.object(maui, 'output', return_value='0'), \
+        clock = iter([0, 0, 1, maui.ANDROID_BOOT_TIMEOUT + 1])
+        with self.adb_answers('0'), \
                 mock.patch.object(maui.time, 'monotonic', side_effect=lambda: next(clock)), \
                 mock.patch.object(maui.time, 'sleep'), self.assertRaises(SystemExit):
             maui.wait_for_android_boot('emulator-5554')
+
+    def test_each_adb_call_is_bounded_by_the_time_left(self):
+        # adb hangs until it is killed: the first check gets the whole wait, and the deadline then ends it
+        now = [0.0]
+
+        def hang(cmd, timeout, **kwargs):
+            now[0] += timeout
+            raise subprocess.TimeoutExpired(cmd, timeout)
+
+        with mock.patch.object(maui.subprocess, 'run', side_effect=hang) as run, \
+                mock.patch.object(maui.time, 'monotonic', side_effect=lambda: now[0]), \
+                mock.patch.object(maui.time, 'sleep'), self.assertRaises(SystemExit):
+            maui.wait_for_android_boot('emulator-5554')
+        # killed at the deadline, so an answer adb would only have given later never counts as booted
+        self.assertEqual(run.call_count, 1)
+        self.assertEqual(run.call_args.kwargs['timeout'], maui.ANDROID_BOOT_TIMEOUT)
 
 
 def simctl_booted(*simulators):
