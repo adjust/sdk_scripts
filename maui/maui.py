@@ -170,9 +170,21 @@ def native_source_state(sdk):
 
 
 def require_committed_native_source():
-    # a release package is built only from committed native source: list what isn't, and leave it alone
+    # a release package is built only from the native revisions this repository pins, with nothing uncommitted on top:
+    # list what differs, and leave it alone
     for sdk in (ANDROID_SDK, IOS_SDK):
         require_dir(sdk)
+        submodule = os.path.relpath(sdk, ROOT)
+        try:
+            pinned = output(['git', '-C', ROOT, 'rev-parse', f'HEAD:{submodule}'])
+        except subprocess.CalledProcessError:
+            error(f'No native commit is pinned for {submodule} in {ROOT}.')
+            sys.exit(1)
+        checked_out = output(['git', '-C', sdk, 'rev-parse', 'HEAD'])
+        if checked_out != pinned:
+            error(f'{sdk} is at {checked_out}, but {submodule} is pinned at {pinned}. '
+                  'Fix: git submodule update --init --recursive')
+            sys.exit(1)
         changes = output(['git', '-C', sdk, 'status', '--porcelain', '--untracked-files=all'])
         if changes:
             error(f'{sdk} has uncommitted or untracked changes; a release is packed only from a committed native revision:')

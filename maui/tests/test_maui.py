@@ -138,7 +138,9 @@ class NativeCheckoutTestCase(QuietTestCase):
         super().setUp()
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
-        self.native = os.path.join(temp.name, 'native')
+        # laid out like the MAUI repository: the native checkout sits at <root>/ext/android/sdk
+        self.root = os.path.join(temp.name, 'maui')
+        self.native = os.path.join(self.root, 'ext', 'android', 'sdk')
         self.artifact = os.path.join(temp.name, 'out', 'adjust-android.aar')
         os.makedirs(self.native)
         git(self.native, 'init', '-q')
@@ -199,6 +201,22 @@ class NativeBuildCacheTest(NativeCheckoutTestCase):
 
 
 class PackTest(NativeCheckoutTestCase):
+    # the MAUI repository pins the native checkout's current commit, as `git submodule update` leaves it
+    def setUp(self):
+        super().setUp()
+        git(self.root, 'init', '-q')
+        self.pin(self.head())
+        patcher = mock.patch.object(maui, 'ROOT', self.root)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def head(self):
+        return subprocess.check_output(['git', '-C', self.native, 'rev-parse', 'HEAD'], text=True).strip()
+
+    def pin(self, commit):
+        git(self.root, 'update-index', '--add', '--cacheinfo', f'160000,{commit},ext/android/sdk')
+        git(self.root, 'commit', '-q', '--allow-empty', '-m', f'pin {commit}')
+
     def pack(self):
         with mock.patch.object(maui, 'build_native') as build_native, mock.patch.object(maui, 'use_dotnet'), \
                 mock.patch.object(maui, 'run'), mock.patch.object(maui, 'recreate_dir'):
@@ -215,6 +233,26 @@ class PackTest(NativeCheckoutTestCase):
         with self.assertRaises(SystemExit):
             self.pack()
         self.assertTrue(os.path.exists(f'{self.native}/src/UntrackedNativeSource.java'))
+
+    def test_stops_when_a_clean_checkout_is_not_at_the_pinned_commit(self):
+        pinned = self.head()
+        write(f'{self.native}/src/Adjust.java', 'version two')
+        git(self.native, 'commit', '-q', '-am', 'local commit')
+        with self.assertRaises(SystemExit):
+            self.pack()
+        self.assertNotEqual(self.head(), pinned)
+
+    def test_builds_when_the_pin_moves_to_the_checked_out_commit(self):
+        write(f'{self.native}/src/Adjust.java', 'version two')
+        git(self.native, 'commit', '-q', '-am', 'new release')
+        self.pin(self.head())
+        self.assertTrue(self.pack().call_args_list)
+
+    def test_stops_when_nothing_is_pinned(self):
+        git(self.root, 'rm', '-q', '--cached', 'ext/android/sdk')
+        git(self.root, 'commit', '-q', '-m', 'unpin')
+        with self.assertRaises(SystemExit):
+            self.pack()
 
     def test_always_builds_from_clean_source(self):
         write(f'{self.native}/build/output.txt', 'build output')
