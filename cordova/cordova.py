@@ -289,6 +289,15 @@ def run_app(target, platform, simulator=False, odm=False):
         run(['cordova', 'plugin', 'remove', plugin], allow_failure=True)
         remove_dir(f'{app_dir}/plugins/{plugin}')
         remove_dir(f'{app_dir}/node_modules/{plugin}')
+    # plugin remove leaves package.json alone for a plugin that isn't installed, and platform add would then
+    # restore it from there, so drop any entry that is left
+    with open(f'{app_dir}/package.json') as package_json:
+        package = json.load(package_json)
+    for section in [package.get('dependencies', {}), package.get('devDependencies', {}),
+                    package.get('cordova', {}).get('plugins', {})]:
+        for plugin in [ODM_PLUGIN, SDK_PLUGIN, TEST_PLUGIN]:
+            section.pop(plugin, None)
+    write_stamp(f'{app_dir}/package.json', json.dumps(package, indent=2) + '\n')
     run(['cordova', 'platform', 'add', f'{platform}@{spec}' if spec else platform])
 
     info('Reinstalling plugins ...')
