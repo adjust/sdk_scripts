@@ -2,7 +2,7 @@
 import sys
 sys.dont_write_bytecode = True
 
-import argparse, hashlib, os, shutil, subprocess, tempfile
+import argparse, hashlib, json, os, shutil, subprocess, tempfile
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from utils import *
 
@@ -17,6 +17,9 @@ IOS_DEPLOYMENT_TARGET = '15.0'
 
 SDK_PLUGIN = 'com.adjust.sdk'
 TEST_PLUGIN = 'com.adjust.test'
+# optional iOS plugin that adds Google ODM, installed from this repo with --odm
+ODM_PLUGIN = 'com.adjust.sdk.odm'
+ODM_DIR = f'{ROOT}/plugins/odm'
 
 # the Ionic wrapper: our index.ts is the source, the awesome-cordova-plugins checkout is only the build tool
 WRAPPER_SOURCE = f'{ROOT}/ionic-native/index.ts'
@@ -65,9 +68,10 @@ IONIC_APPS = {
         'package': 'com.adjust.examples',
         # the test server is reached over plain http and ws
         'plist': [['NSAppTransportSecurity', '-json', '{"NSAllowsArbitraryLoads": true}']],
+        # the test plugin links AdjustTestLibrary as a static .framework, which Capacitor can't add to a Swift package
+        'cocoapods_only': True,
     },
 }
-
 
 def build_android_jar(module, mode):
     require_dir(ANDROID_SDK)
@@ -177,7 +181,7 @@ def check_setup(target=None, platform=None):
         sys.exit(1)
 
 
-def run_ionic_app(target, platform):
+def run_ionic_app(target, platform, odm=False):
     app = IONIC_APPS[target]
     app_dir = app['dir']
 
@@ -188,7 +192,33 @@ def run_ionic_app(target, platform):
 
     info('Installing the app dependencies ...')
     change_dir(app_dir)
-    run(['npm', 'install', '--no-audit', '--no-fund'])
+    # Capacitor only picks up plugins listed in package.json, so --odm adds the ODM plugin there for this run
+    # and the original file is put back once the native project is generated
+    package_json = f'{app_dir}/package.json'
+    original_package = open(package_json).read()
+    if odm:
+        package = json.loads(original_package)
+        package['dependencies'][ODM_PLUGIN] = f'file:{os.path.relpath(ODM_DIR, app_dir)}'
+        write_stamp(package_json, json.dumps(package, indent=2) + '\n')
+    else:
+        remove_dir(f'{app_dir}/node_modules/{ODM_PLUGIN}')
+    try:
+        run(['npm', 'install', '--no-audit', '--no-fund'])
+        prepare_ionic_app(app, platform)
+    finally:
+        write_stamp(package_json, original_package)
+    if platform == 'android':
+        info('Building and running the app ...')
+        change_dir(f'{app_dir}/android')
+        run(['./gradlew', 'assembleDebug'])
+        run(['adb', 'install', '-r', 'app/build/outputs/apk/debug/app-debug.apk'])
+        run(['adb', 'shell', 'monkey', '-p', app['package'], '1'])
+        return
+    build_ionic_ios_app(app)
+
+
+def prepare_ionic_app(app, platform):
+    app_dir = app['dir']
     info('Replacing the published Ionic wrapper with the local build ...')
     install_ionic_wrapper(app_dir)
 
@@ -201,24 +231,30 @@ def run_ionic_app(target, platform):
     remove_dir(f'{app_dir}/{platform}')
     if platform == 'android':
         run(['npx', 'cap', 'add', 'android'], env=QUIET)
-        info('Building and running the app ...')
-        change_dir(f'{app_dir}/android')
-        run(['./gradlew', 'assembleDebug'])
-        run(['adb', 'install', '-r', 'app/build/outputs/apk/debug/app-debug.apk'])
-        run(['adb', 'shell', 'monkey', '-p', app['package'], '1'])
         return
 
-    # our plugin gets the native SDK from CocoaPods, while Capacitor defaults to Swift packages
-    run(['npx', 'cap', 'add', 'ios', '--packagemanager', 'CocoaPods'], env=QUIET)
+    # Capacitor pick the package manager: SPM from Capacitor 8 on, CocoaPods before.
+    # To check CocoaPods, install a lower @capacitor version in the app.
+    run(['npx', 'cap', 'add', 'ios', *(['--packagemanager', 'CocoaPods'] if app.get('cocoapods_only') else [])],
+        env=QUIET)
+    spm = os.path.isdir(f'{app_dir}/ios/App/CapApp-SPM')
+    info(f'Capacitor set up the iOS project with {"SPM" if spm else "CocoaPods"}')
     for entry in app['plist']:
         run(['plutil', '-replace', *entry, 'ios/App/App/Info.plist'])
 
+
+def build_ionic_ios_app(app):
+    app_dir = app['dir']
+    change_dir(app_dir)
+    spm = os.path.isdir(f'{app_dir}/ios/App/CapApp-SPM')
     team = apple_development_team()
     if not team:
         error('No Apple Development certificate found. Fix: sign in to Xcode with your Apple ID')
         sys.exit(1)
     info('Building the app ...')
-    run(['xcodebuild', '-workspace', 'ios/App/App.xcworkspace', '-scheme', 'App', '-configuration', 'Debug',
+    # an SPM project has no workspace, the packages are part of the Xcode project
+    project = ['-project', 'ios/App/App.xcodeproj'] if spm else ['-workspace', 'ios/App/App.xcworkspace']
+    run(['xcodebuild', *project, '-scheme', 'App', '-configuration', 'Debug',
          '-destination', 'generic/platform=iOS', '-derivedDataPath', 'ios/build', '-allowProvisioningUpdates',
          f'DEVELOPMENT_TEAM={team}', 'CODE_SIGN_STYLE=Automatic', 'build'])
 
@@ -231,7 +267,7 @@ def run_ionic_app(target, platform):
     run(['xcrun', 'devicectl', 'device', 'process', 'launch', '--terminate-existing', '--device', udid, app['package']])
 
 
-def run_app(target, platform, simulator=False):
+def run_app(target, platform, simulator=False, odm=False):
     app = APPS[target]
     app_dir = app['dir']
 
@@ -240,13 +276,23 @@ def run_app(target, platform, simulator=False):
 
     info(f'Reinstalling the {platform} platform ...')
     change_dir(app_dir)
+    # platform remove also drops cordova-<platform> from package.json, and platform add then picks the latest version,
+    # so read the version the app asks for first and pass it explicitly
+    with open(f'{app_dir}/package.json') as package_json:
+        package = json.load(package_json)
+    spec = {**package.get('dependencies', {}), **package.get('devDependencies', {})}.get(f'cordova-{platform}')
     run(['cordova', 'platform', 'remove', platform], allow_failure=True)
-    run(['cordova', 'platform', 'add', platform])
+    # remove the Adjust plugins before platform add: it would otherwise restore them from their saved file: specs,
+    # which cordova resolves against the wrong directory, or reuse stale copies. They're added again below.
+    # The ODM plugin depends on the SDK plugin, so it has to go first.
+    for plugin in [ODM_PLUGIN, SDK_PLUGIN, TEST_PLUGIN]:
+        run(['cordova', 'plugin', 'remove', plugin], allow_failure=True)
+        remove_dir(f'{app_dir}/plugins/{plugin}')
+        remove_dir(f'{app_dir}/node_modules/{plugin}')
+    run(['cordova', 'platform', 'add', f'{platform}@{spec}' if spec else platform])
 
     info('Reinstalling plugins ...')
-    for plugin in [SDK_PLUGIN, TEST_PLUGIN]:
-        run(['cordova', 'plugin', 'remove', plugin], allow_failure=True)
-    for plugin in app['local'] + app['plugins']:
+    for plugin in app['local'] + ([[ODM_DIR]] if odm else []) + app['plugins']:
         run(['cordova', 'plugin', 'add'] + plugin)
 
     if platform == 'android':
@@ -281,7 +327,9 @@ def main():
                '  ./cordova.py run example-app android\n'
                '  ./cordova.py run test-app ios\n'
                '  ./cordova.py run test-app ios --simulator\n'
+               '  ./cordova.py run example-app ios --odm\n'
                '  ./cordova.py run ionic-example-app ios\n'
+               '  ./cordova.py run ionic-example-app ios --odm\n'
                '  ./cordova.py run ionic-test-app android\n',
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('action', choices=['build-native', 'build-wrapper', 'run'])
@@ -289,6 +337,7 @@ def main():
     parser.add_argument('platform', nargs='?', choices=['android', 'ios'])
     parser.add_argument('mode', nargs='?', default='debug', choices=['debug', 'release'])
     parser.add_argument('--simulator', action='store_true', help='run on a simulator instead of a connected device')
+    parser.add_argument('--odm', action='store_true', help='also install the Google ODM plugin (ios only)')
     args = parser.parse_args()
 
     if args.action == 'build-wrapper':
@@ -310,6 +359,8 @@ def main():
         parser.error('--simulator applies to ios only')
     if args.simulator and args.target in IONIC_APPS:
         parser.error('--simulator is not supported for the Ionic apps')
+    if args.odm and (args.action != 'run' or args.platform != 'ios'):
+        parser.error('--odm applies to run on ios only')
 
     if args.action == 'build-native':
         if args.target == 'test-library':
@@ -324,9 +375,9 @@ def main():
         if args.platform == 'android':
             build_android_jar('test-options', args.mode)
     if args.target in IONIC_APPS:
-        run_ionic_app(args.target, args.platform)
+        run_ionic_app(args.target, args.platform, args.odm)
     else:
-        run_app(args.target, args.platform, args.simulator)
+        run_app(args.target, args.platform, args.simulator, args.odm)
 
 
 if __name__ == '__main__':
