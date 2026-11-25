@@ -2,7 +2,7 @@
 import sys
 sys.dont_write_bytecode = True
 
-import argparse, glob, json, os, shutil, socket, subprocess, tempfile
+import argparse, glob, hashlib, json, os, shutil, socket, subprocess, tempfile, time
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from utils import *
 
@@ -153,18 +153,58 @@ def build_ios(target):
         info(f'{built} -> {destination}')
 
 
+def native_source_state(sdk):
+    # what a native build is made from: the checked-out commit, uncommitted changes to tracked files and
+    # the contents of untracked files Git does not ignore (new sources); ignored files, such as build output, don't count
+    digest = hashlib.sha256(subprocess.check_output(['git', '-C', sdk, 'diff', 'HEAD', '--binary']))
+    untracked = subprocess.check_output(['git', '-C', sdk, 'ls-files', '--others', '--exclude-standard', '-z'])
+    for path in sorted(filter(None, untracked.split(b'\0'))):
+        full = os.path.join(sdk, os.fsdecode(path))
+        digest.update(path + b'\0')
+        if os.path.islink(full):
+            digest.update(os.fsencode(os.readlink(full)))
+        else:
+            with open(full, 'rb') as file:
+                digest.update(file.read())
+    return f'{output(["git", "-C", sdk, "rev-parse", "HEAD"])} {digest.hexdigest()}'
+
+
+def require_committed_native_source():
+    # a release package is built only from the native revisions this repository pins, with nothing uncommitted on top:
+    # list what differs, and leave it alone
+    for sdk in (ANDROID_SDK, IOS_SDK):
+        require_dir(sdk)
+        submodule = os.path.relpath(sdk, ROOT)
+        try:
+            pinned = output(['git', '-C', ROOT, 'rev-parse', f'HEAD:{submodule}'])
+        except subprocess.CalledProcessError:
+            error(f'No native commit is pinned for {submodule} in {ROOT}.')
+            sys.exit(1)
+        checked_out = output(['git', '-C', sdk, 'rev-parse', 'HEAD'])
+        if checked_out != pinned:
+            error(f'{sdk} is at {checked_out}, but {submodule} is pinned at {pinned}. '
+                  'Fix: git submodule update --init --recursive')
+            sys.exit(1)
+        changes = output(['git', '-C', sdk, 'status', '--porcelain', '--untracked-files=all'])
+        if changes:
+            error(f'{sdk} has uncommitted or untracked changes; a release is packed only from a committed native revision:')
+            for line in changes.splitlines():
+                error(f'  {line}')
+            sys.exit(1)
+
+
 def build_native(target, platform, force=True):
     sdk, libs = (ANDROID_SDK, ANDROID_LIBS) if platform == 'android' else (IOS_SDK, IOS_LIBS)
     require_dir(sdk)
 
-    # native builds take minutes, so `run` and `pack` repeat one only when the native submodule has moved
-    # since the last build or its output is gone; `build-native` always builds
+    # native builds take minutes, so `run` repeats one only when the native source has changed since the last
+    # build (a new submodule commit, an edit or a new untracked file) or its output is gone; `build-native` always builds
     name = f'{platform}-{target}'
-    state = f'{target} {output(["git", "-C", sdk, "rev-parse", "HEAD"])}'
+    state = f'{target} {native_source_state(sdk)}'
     stamp = f'{ARTIFACTS}/native/{name}'
     built = all(os.path.exists(path) for path in libs[target].values())
     if not force and built and os.path.isfile(stamp) and open(stamp).read() == state:
-        info(f'Native {name} is already built from the current submodule commit.')
+        info(f'Native {name} is already built from the current native source.')
         return
 
     build_android(target) if platform == 'android' else build_ios(target)
@@ -202,16 +242,103 @@ def check_setup(platform=None):
         sys.exit(1)
 
 
-def find_device(platform, simulator):
+# how long to wait for a connected Android device to finish booting
+ANDROID_BOOT_TIMEOUT = 300
+
+
+def android_devices():
+    # serial -> state for every device `adb devices` lists; only 'device' can be installed on,
+    # the others are e.g. 'offline' (still booting) or 'unauthorized' (USB debugging not allowed yet)
+    devices = {}
+    for line in output(['adb', 'devices']).splitlines()[1:]:
+        fields = line.split()
+        if len(fields) >= 2:
+            devices[fields[0]] = fields[1]
+    return devices
+
+
+def find_android_device(serial):
+    devices = android_devices()
+    ready = [name for name, state in devices.items() if state == 'device']
+    not_ready = [f'{name} ({state})' for name, state in devices.items() if state != 'device']
+    if serial:
+        if serial not in ready:
+            error(f'Android device {serial} is not ready: {devices.get(serial, "not connected")}.')
+            sys.exit(1)
+        return serial
+    if not ready:
+        error('No connected Android device is ready.' + (f' Not ready: {", ".join(not_ready)}' if not_ready else ''))
+        sys.exit(1)
+    if len(ready) > 1:
+        error(f'More than one Android device is ready: {", ".join(ready)}. Fix: pick one with --device <serial>')
+        sys.exit(1)
+    return ready[0]
+
+
+def android_boot_completed(serial, timeout):
+    # adb can hang on a device that is going offline, so each check gets no more than the time left to wait
+    try:
+        result = subprocess.run(['adb', '-s', serial, 'shell', 'getprop', 'sys.boot_completed'],
+                                capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return False
+    return result.returncode == 0 and result.stdout.strip() == '1'
+
+
+def wait_for_android_boot(serial):
+    deadline = time.monotonic() + ANDROID_BOOT_TIMEOUT
+    waiting = False
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            error(f'{serial} did not finish booting within {ANDROID_BOOT_TIMEOUT} seconds.')
+            sys.exit(1)
+        if android_boot_completed(serial, remaining):
+            return
+        if not waiting:
+            info(f'Waiting for {serial} to finish booting ...')
+            waiting = True
+        time.sleep(min(2, max(0, deadline - time.monotonic())))
+
+
+def describe_simulators(simulators):
+    return ', '.join(f'{simulator["name"]} on {simulator["runtime"]} ({simulator["udid"]})' for simulator in simulators) or 'none'
+
+
+def find_ios_simulator(name):
+    # the booted simulator to run on: the one named (by name or UDID), or the only one booted
+    booted = json.loads(output(['xcrun', 'simctl', 'list', 'devices', 'booted', '--json']))['devices']
+    simulators = [{**simulator, 'runtime': runtime.rsplit('.', 1)[-1]}
+                  for runtime, devices in booted.items() for simulator in devices]
+    if name:
+        matches = [simulator for simulator in simulators if name in (simulator['name'], simulator['udid'])]
+        if not matches:
+            error(f'No booted iOS simulator is named {name}. Booted: {describe_simulators(simulators)}')
+            sys.exit(1)
+        if len(matches) > 1:
+            # the same name can be booted on several runtimes: only the UDID says which one is meant
+            error(f'More than one booted iOS simulator is named {name}: {describe_simulators(matches)}. '
+                  'Fix: pick one with --device <UDID>')
+            sys.exit(1)
+        return matches[0]['udid']
+    if len(simulators) > 1:
+        error(f'More than one iOS simulator is booted: {describe_simulators(simulators)}. '
+              'Fix: pick one with --device <name or UDID>')
+        sys.exit(1)
+    return simulators[0]['udid'] if simulators else None
+
+
+def find_device(platform, simulator, name=None):
     if platform == 'android':
-        device = output(['adb', 'devices']).splitlines()[1:]
-        problem = 'No connected Android device found.'
+        device = find_android_device(name)
+        wait_for_android_boot(device)
+        return device
     elif simulator:
-        booted = json.loads(output(['xcrun', 'simctl', 'list', 'devices', 'booted', '--json']))['devices']
-        device = next((device['udid'] for runtime in booted.values() for device in runtime), None)
+        device = find_ios_simulator(name)
         problem = 'No booted iOS simulator found. Fix: open the Simulator app and boot a device'
     else:
-        device = connected_ios_device()
+        # devicectl checks a named device itself when installing
+        device = name or connected_ios_device()
         problem = 'No connected iOS device found.'
     if not device:
         error(problem)
@@ -220,10 +347,15 @@ def find_device(platform, simulator):
 
 
 def local_ip():
-    # the address other devices on the network reach this machine at; connecting a UDP socket sends nothing
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
-        probe.connect(('10.255.255.255', 1))
-        return probe.getsockname()[0]
+    # the address other devices on the network reach this machine at; connecting a UDP socket sends nothing.
+    # None without a network route: the test apps then use their own default (the simulator's or emulator's host)
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+            probe.connect(('10.255.255.255', 1))
+            return probe.getsockname()[0]
+    except OSError as failure:
+        info(f'No network address found ({failure}); the test app uses its default test server address.')
+        return None
 
 
 def local_packages():
@@ -240,7 +372,23 @@ def local_packages():
     return f'-p:RestoreAdditionalProjectSources={PACKAGES}'
 
 
-def run_app(target, platform, mode, simulator, version):
+def build_ios_app(project, build):
+    # build, and ask the iOS SDK where this very build put the app bundle (_AppBundlePath, relative to the project):
+    # other target frameworks may have left older bundles next to it. -getProperty needs an explicit -t:Build,
+    # or MSBuild only evaluates the project; -getResultOutputFile keeps the build log on the console
+    with tempfile.TemporaryDirectory() as temp:
+        result = f'{temp}/app-bundle-path'
+        run(build + ['-t:Build', '-getProperty:_AppBundlePath', f'-getResultOutputFile:{result}'])
+        with open(result) as file:
+            bundle = file.read().strip()
+    app_bundle = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(project)), bundle)) if bundle else None
+    if not app_bundle or not os.path.isdir(app_bundle):
+        error(f'The build did not produce an .app bundle (reported: {bundle or "nothing"}).')
+        sys.exit(1)
+    return app_bundle
+
+
+def run_app(target, platform, mode, simulator, version, device_name=None):
     app = APPS[target]
     plain = '{platform}' in app['project']
     project = app['project'].format(net='-Net10' if version == 'net10' else '', platform=platform.capitalize())
@@ -253,43 +401,43 @@ def run_app(target, platform, mode, simulator, version):
         build.append(local_packages())
     if target.endswith('test-app'):
         # the test apps connect to the test server on this machine
-        build.append(f'-p:TestServerIp={local_ip()}')
+        ip = local_ip()
+        if ip:
+            build.append(f'-p:TestServerIp={ip}')
 
     # look for the device first: without one the .NET build runs to the end before the run fails
-    device = find_device(platform, simulator)
+    device = find_device(platform, simulator, device_name)
     for native in app.get('native', {}).get(platform, []):
         build_native(native, platform, force=False)
     use_dotnet(version)
 
     if platform == 'android':
-        run(['adb', 'uninstall', PACKAGE], allow_failure=True)
-        info('Building and running the app ...')
-        run(build + ['-t:Run'])
+        # name the device everywhere: with more than one connected, adb and the Run target refuse to pick
+        run(['adb', '-s', device, 'uninstall', PACKAGE], allow_failure=True)
+        info(f'Building and running the app on {device} ...')
+        run(build + ['-t:Run', f'-p:AdbTarget=-s {device}'])
         return
 
     runtime = 'iossimulator-arm64' if simulator else 'ios-arm64'
     info('Building the app ...')
     # the .NET 10 iOS workload builds apps only with the one Xcode version it was released for, unless told otherwise
-    run(build + [f'-p:RuntimeIdentifier={runtime}', '-p:ValidateXcodeVersion=false'])
-    name = os.path.splitext(os.path.basename(project))[0]
-    built = glob.glob(f'{ARTIFACTS}/{name}/bin/{config}/*/{runtime}/*.app')
-    if not built:
-        error('The build did not produce an .app bundle.')
-        sys.exit(1)
+    app_bundle = build_ios_app(project, build + [f'-p:RuntimeIdentifier={runtime}', '-p:ValidateXcodeVersion=false'])
 
     # .NET deploys through mlaunch, which lags behind new Xcode and iOS versions, so install ourselves
     info(f'Installing and launching on {device} ...')
     if simulator:
-        run(['xcrun', 'simctl', 'install', device, built[0]])
+        run(['xcrun', 'simctl', 'install', device, app_bundle])
         run(['xcrun', 'simctl', 'launch', '--terminate-running-process', device, PACKAGE])
     else:
-        run(['xcrun', 'devicectl', 'device', 'install', 'app', '--device', device, built[0]])
+        run(['xcrun', 'devicectl', 'device', 'install', 'app', '--device', device, app_bundle])
         run(['xcrun', 'devicectl', 'device', 'process', 'launch', '--terminate-existing', '--device', device, PACKAGE])
 
 
 def pack():
+    # the packages ship the native libraries, so build them again from committed source, never from a cache
+    require_committed_native_source()
     for platform, target in [('android', 'sdk'), ('android', 'plugins'), ('ios', 'sdk')]:
-        build_native(target, platform, force=False)
+        build_native(target, platform, force=True)
 
     # every package carries both the .NET 8 and the .NET 10 build
     for version in DOTNET:
@@ -312,8 +460,10 @@ def main():
                '  ./maui.py build-native plugins android\n'
                '  ./maui.py build-native test-library ios\n'
                '  ./maui.py run example-app android\n'
+               '  ./maui.py run example-app android --device emulator-5554\n'
                '  ./maui.py run test-app ios\n'
                '  ./maui.py run test-app ios --simulator\n'
+               '  ./maui.py run test-app ios --simulator --device "iPhone 17 Pro"\n'
                '  ./maui.py run example-app android release --net10\n'
                '  ./maui.py run nuget-example-app ios\n'
                '  ./maui.py run dotnet-example-app android\n'
@@ -325,6 +475,8 @@ def main():
     parser.add_argument('platform', nargs='?', choices=['android', 'ios'])
     parser.add_argument('mode', nargs='?', default='debug', choices=['debug', 'release'])
     parser.add_argument('--simulator', action='store_true', help='run on the booted simulator instead of a connected device')
+    parser.add_argument('--device', help='the device to run on when more than one is available: an Android serial, '
+                                         'an iOS simulator name or UDID (with --simulator) or an iOS device UDID')
     parser.add_argument('--net10', action='store_true', help='build the app with .NET 10 instead of .NET 8')
     args = parser.parse_args()
 
@@ -347,12 +499,14 @@ def main():
         parser.error('--simulator applies to running an app on ios only')
     if args.net10 and args.target.startswith('dotnet-'):
         parser.error('the plain .NET apps are .NET 8 only')
+    if args.device and args.action != 'run':
+        parser.error('--device applies to running an app only')
 
     check_setup(args.platform)
     if args.action == 'build-native':
         build_native(args.target, args.platform)
     else:
-        run_app(args.target, args.platform, args.mode, args.simulator, 'net10' if args.net10 else 'net8')
+        run_app(args.target, args.platform, args.mode, args.simulator, 'net10' if args.net10 else 'net8', args.device)
 
 
 if __name__ == '__main__':
