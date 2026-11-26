@@ -68,8 +68,6 @@ IONIC_APPS = {
         'package': 'com.adjust.examples',
         # the test server is reached over plain http and ws
         'plist': [['NSAppTransportSecurity', '-json', '{"NSAllowsArbitraryLoads": true}']],
-        # the test plugin links AdjustTestLibrary as a static .framework, which Capacitor can't add to a Swift package
-        'cocoapods_only': True,
     },
 }
 
@@ -90,7 +88,7 @@ def build_test_library(platform, mode):
     require_dir(IOS_SDK)
     # the static target builds both slices itself and dittos the result into sdk_distribution
     built = f'{IOS_SDK}/sdk_distribution/test-static-framework-device/AdjustTestLibrary.framework'
-    out = f'{ROOT}/test/plugin/src/ios/AdjustTestLibrary.framework'
+    out = f'{ROOT}/test/plugin/src/ios/AdjustTestLibrary.xcframework'
 
     info('Building iOS test library framework ...')
     change_dir(f'{IOS_SDK}/AdjustTests/AdjustTestLibrary')
@@ -106,9 +104,19 @@ def build_test_library(platform, mode):
         error(f'{built} was not produced by the build.')
         sys.exit(1)
 
+    # Capacitor only takes an xcframework into a Swift package, and an xcframework takes one platform per library,
+    # so the device and the Intel simulator build are split. They go in as static libraries, because Xcode embeds
+    # a framework that comes from a Swift package and then rejects ours for having no Info.plist.
     remove_dir(out)
-    copy_dir(built, out)
-    remove_dir(f'{out}/Versions')
+    with tempfile.TemporaryDirectory() as temp:
+        copy_dir(f'{built}/Headers', f'{temp}/Headers/AdjustTestLibrary')
+        libraries = []
+        for arch in ['arm64', 'x86_64']:
+            library = f'{temp}/{arch}/libAdjustTestLibrary.a'
+            os.makedirs(os.path.dirname(library))
+            run(['lipo', '-thin', arch, f'{built}/AdjustTestLibrary', '-output', library])
+            libraries += ['-library', library, '-headers', f'{temp}/Headers']
+        run(['xcodebuild', '-create-xcframework', *libraries, '-output', out])
 
 
 def file_hash(path):
@@ -181,7 +189,7 @@ def check_setup(target=None, platform=None):
         sys.exit(1)
 
 
-def run_ionic_app(target, platform, odm=False):
+def run_ionic_app(target, platform, odm=False, cocoapods=False):
     app = IONIC_APPS[target]
     app_dir = app['dir']
 
@@ -200,11 +208,12 @@ def run_ionic_app(target, platform, odm=False):
         package = json.loads(original_package)
         package['dependencies'][ODM_PLUGIN] = f'file:{os.path.relpath(ODM_DIR, app_dir)}'
         write_stamp(package_json, json.dumps(package, indent=2) + '\n')
-    else:
-        remove_dir(f'{app_dir}/node_modules/{ODM_PLUGIN}')
+    # npm keeps the copies of the Adjust plugins it already made, so remove them to get the current files
+    for plugin in [ODM_PLUGIN, SDK_PLUGIN, TEST_PLUGIN]:
+        remove_dir(f'{app_dir}/node_modules/{plugin}')
     try:
         run(['npm', 'install', '--no-audit', '--no-fund'])
-        prepare_ionic_app(app, platform)
+        prepare_ionic_app(app, platform, cocoapods)
     finally:
         write_stamp(package_json, original_package)
     if platform == 'android':
@@ -217,7 +226,7 @@ def run_ionic_app(target, platform, odm=False):
     build_ionic_ios_app(app)
 
 
-def prepare_ionic_app(app, platform):
+def prepare_ionic_app(app, platform, cocoapods=False):
     app_dir = app['dir']
     info('Replacing the published Ionic wrapper with the local build ...')
     install_ionic_wrapper(app_dir)
@@ -233,10 +242,8 @@ def prepare_ionic_app(app, platform):
         run(['npx', 'cap', 'add', 'android'], env=QUIET)
         return
 
-    # Capacitor pick the package manager: SPM from Capacitor 8 on, CocoaPods before.
-    # To check CocoaPods, install a lower @capacitor version in the app.
-    run(['npx', 'cap', 'add', 'ios', *(['--packagemanager', 'CocoaPods'] if app.get('cocoapods_only') else [])],
-        env=QUIET)
+    # Capacitor 8 sets the project up with SPM unless it is told to use CocoaPods
+    run(['npx', 'cap', 'add', 'ios', *(['--packagemanager', 'CocoaPods'] if cocoapods else [])], env=QUIET)
     spm = os.path.isdir(f'{app_dir}/ios/App/CapApp-SPM')
     info(f'Capacitor set up the iOS project with {"SPM" if spm else "CocoaPods"}')
     for entry in app['plist']:
@@ -339,6 +346,7 @@ def main():
                '  ./cordova.py run example-app ios --odm\n'
                '  ./cordova.py run ionic-example-app ios\n'
                '  ./cordova.py run ionic-example-app ios --odm\n'
+               '  ./cordova.py run ionic-test-app ios --cocoapods\n'
                '  ./cordova.py run ionic-test-app android\n',
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('action', choices=['build-native', 'build-wrapper', 'run'])
@@ -347,6 +355,7 @@ def main():
     parser.add_argument('mode', nargs='?', default='debug', choices=['debug', 'release'])
     parser.add_argument('--simulator', action='store_true', help='run on a simulator instead of a connected device')
     parser.add_argument('--odm', action='store_true', help='also install the Google ODM plugin (ios only)')
+    parser.add_argument('--cocoapods', action='store_true', help='use CocoaPods instead of SPM (Ionic on ios only)')
     args = parser.parse_args()
 
     if args.action == 'build-wrapper':
@@ -370,6 +379,8 @@ def main():
         parser.error('--simulator is not supported for the Ionic apps')
     if args.odm and (args.action != 'run' or args.platform != 'ios'):
         parser.error('--odm applies to run on ios only')
+    if args.cocoapods and (args.action != 'run' or args.platform != 'ios' or args.target not in IONIC_APPS):
+        parser.error('--cocoapods applies to run of the Ionic apps on ios only')
 
     if args.action == 'build-native':
         if args.target == 'test-library':
@@ -384,7 +395,7 @@ def main():
         if args.platform == 'android':
             build_android_jar('test-options', args.mode)
     if args.target in IONIC_APPS:
-        run_ionic_app(args.target, args.platform, args.odm)
+        run_ionic_app(args.target, args.platform, args.odm, args.cocoapods)
     else:
         run_app(args.target, args.platform, args.simulator, args.odm)
 
